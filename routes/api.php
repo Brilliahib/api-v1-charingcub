@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\ArticleTypeController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DaycareController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -18,3 +21,43 @@ use Illuminate\Support\Facades\Route;
 // Authentication routes
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
+
+Route::middleware('auth:api')->group(function () {
+    Route::get('/auth/get-auth', [AuthController::class, 'getAuth']);
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
+    Route::post('/auth/update-account', [AuthController::class, 'updateAccount']);
+
+    Route::post('/daycare/review', [DaycareController::class, 'reviewDaycare']);
+
+    // Admin-only routes
+    Route::middleware('role:admin')->group(function () {
+        // Rute untuk Article
+        Route::prefix('article')->group(function () {
+            Route::post('/', [ArticleController::class, 'create']);
+        });
+
+        // Rute untuk ArticleType
+        Route::prefix('article-types')->group(function () {
+            Route::post('/', [ArticleTypeController::class, 'create']); // Create a new article type
+        });
+
+        // Route untuk Daycare
+        Route::prefix('daycares')->group(function () {
+            Route::post('/', [DaycareController::class, 'store']); // Create a new daycare
+            Route::put('/{id}', [DaycareController::class, 'update']); // Update an existing daycare
+            Route::delete('/{id}', [DaycareController::class, 'destroy']); // Delete a daycare
+        });
+    });
+});
+
+// Route for not auth
+Route::get('/article/{id}', [ArticleController::class, 'show']); // Get a single article by ID
+Route::get('/article', [ArticleController::class, 'getAllArticle']); // Get all articles
+
+Route::get('/article-types', [ArticleTypeController::class, 'getAllArticleType']); // Get all article types
+Route::get('/article-types/{id}', [ArticleController::class, 'showArticleType']); // Get a single article type by ID
+
+// Route untuk mendapatkan semua daycare
+Route::get('/daycares', [DaycareController::class, 'index']); // Get all daycares
+// Route untuk mendapatkan daycare berdasarkan ID
+Route::get('/daycares/{id}', [DaycareController::class, 'show']); // Get a single daycare by ID
