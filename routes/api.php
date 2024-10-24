@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\ArticleTypeController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BookingNanniesController;
 use App\Http\Controllers\DaycareController;
 use App\Http\Controllers\NannyController;
 use Illuminate\Http\Request;
@@ -27,16 +29,29 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/auth/get-auth', [AuthController::class, 'getAuth']);
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
     Route::post('/auth/update-account', [AuthController::class, 'updateAccount']);
-
     Route::post('/daycare/review', [DaycareController::class, 'reviewDaycare']);
+
+    Route::get('/nannies', [BookingNanniesController::class, 'listNannies']);
+    Route::post('/nannies/booking', [BookingNanniesController::class, 'bookNanny']);
+    Route::post('/nannies/booking/{id}/payment', [BookingNanniesController::class, 'uploadPaymentProof']);
+    Route::get('/nannies/booking/list', [BookingNanniesController::class, 'listUserBookings']);
 
     // Admin-only routes
     Route::middleware('role:admin')->group(function () {
+        // route for create user
+        Route::prefix('user')->group(function () {
+            Route::post('/', [AdminController::class, 'createUser']);
+        });
+
         // Rute untuk Article
         Route::prefix('article')->group(function () {
             Route::post('/', [ArticleController::class, 'create']);
             Route::put('/{id}', [ArticleController::class, 'update']); // Update an existing daycare
             Route::delete('/{id}', [ArticleController::class, 'destroy']);
+        });
+
+        Route::prefix('user')->group(function () {
+            Route::post('/', [AdminController::class, 'createUser']);
         });
 
         // Rute untuk ArticleType
@@ -56,6 +71,8 @@ Route::middleware('auth:api')->group(function () {
             Route::post('/', [NannyController::class, 'store']); // Create a new daycare
             Route::put('/{id}', [NannyController::class, 'update']); // Update an existing daycare
             Route::delete('/{id}', [NannyController::class, 'destroy']); // Delete a daycare
+            Route::post('/booking/{id}/approve', [BookingNanniesController::class, 'approveBooking']);
+            Route::post('/booking/{id}/paid', [BookingNanniesController::class, 'paidConfirmationBooking']);
         });
     });
 
@@ -75,6 +92,8 @@ Route::middleware('auth:api')->group(function () {
             Route::post('/', [NannyController::class, 'store']); // Create a new daycare
             Route::put('/{id}', [NannyController::class, 'update']); // Update an existing daycare
             Route::delete('/{id}', [NannyController::class, 'destroy']); // Delete a daycare
+            Route::post('/booking/{id}/approve', [BookingNanniesController::class, 'approveBooking']);
+            Route::post('/booking/{id}/paid', [BookingNanniesController::class, 'paidConfirmationBooking']);
         });
     });
 });

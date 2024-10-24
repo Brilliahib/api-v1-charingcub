@@ -5,21 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Nanny extends Model
+class BookingNannies extends Model
 {
     use HasFactory;
     protected $guarded = ['id'];
 
-    public function user(){
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
 
-    public function daycare(){
-        return $this->belongsTo(Daycare::class);
-    }
-
-    public function bookingNannies()
+    public function nannies()
     {
-        return $this->hasMany(BookingNannies::class);
+        return $this->belongsTo(Nanny::class);
     }
 }
