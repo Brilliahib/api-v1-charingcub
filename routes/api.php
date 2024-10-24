@@ -35,6 +35,8 @@ Route::middleware('auth:api')->group(function () {
         // Rute untuk Article
         Route::prefix('article')->group(function () {
             Route::post('/', [ArticleController::class, 'create']);
+            Route::put('/{id}', [ArticleController::class, 'update']); // Update an existing daycare
+            Route::delete('/{id}', [ArticleController::class, 'destroy']);
         });
 
         // Rute untuk ArticleType
