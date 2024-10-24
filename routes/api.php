@@ -4,6 +4,7 @@ use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\ArticleTypeController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DaycareController;
+use App\Http\Controllers\NannyController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,32 @@ Route::middleware('auth:api')->group(function () {
             Route::put('/{id}', [DaycareController::class, 'update']); // Update an existing daycare
             Route::delete('/{id}', [DaycareController::class, 'destroy']); // Delete a daycare
         });
+
+        // Route untuk Daycare
+        Route::prefix('nannies')->group(function () {
+            Route::post('/', [NannyController::class, 'store']); // Create a new daycare
+            Route::put('/{id}', [NannyController::class, 'update']); // Update an existing daycare
+            Route::delete('/{id}', [NannyController::class, 'destroy']); // Delete a daycare
+        });
+    });
+
+    // Daycare-only routes
+    Route::middleware('role:daycare')->group(function () {
+        // Route untuk Daycare
+        Route::prefix('daycares')->group(function () {
+            Route::post('/', [DaycareController::class, 'store']); // Create a new daycare
+            Route::put('/{id}', [DaycareController::class, 'update']); // Update an existing daycare
+            Route::delete('/{id}', [DaycareController::class, 'destroy']); // Delete a daycare
+        });
+    });
+
+    Route::middleware('role:nannies')->group(function () {
+        // Route untuk Daycare
+        Route::prefix('nannies')->group(function () {
+            Route::post('/', [NannyController::class, 'store']); // Create a new daycare
+            Route::put('/{id}', [NannyController::class, 'update']); // Update an existing daycare
+            Route::delete('/{id}', [NannyController::class, 'destroy']); // Delete a daycare
+        });
     });
 });
 
@@ -59,5 +86,7 @@ Route::get('/article-types/{id}', [ArticleController::class, 'showArticleType'])
 
 // Route untuk mendapatkan semua daycare
 Route::get('/daycares', [DaycareController::class, 'index']); // Get all daycares
-// Route untuk mendapatkan daycare berdasarkan ID
 Route::get('/daycares/{id}', [DaycareController::class, 'show']); // Get a single daycare by ID
+
+Route::get('/nannies', [NannyController::class, 'index']); // Get all daycares
+Route::get('/nannies/{id}', [NannyController::class, 'show']); // Get a single daycare by ID

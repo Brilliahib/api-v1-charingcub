@@ -24,7 +24,7 @@ class DaycareController extends Controller
     // Menampilkan daycare berdasarkan ID
     public function show($id)
     {
-        $daycare = Daycare::findOrFail($id);
+        $daycare = Daycare::with('facilityImages')->findOrFail($id);
         return response()->json([
             'statusCode' => 200,
             'message' => 'Successfully retrieved daycare',
@@ -34,34 +34,39 @@ class DaycareController extends Controller
 
     public function store(Request $request)
     {
+
         $request->validate([
             'name' => 'required|string|max:255',
-            'images' => 'required|image', // Validasi untuk gambar utama
+            'images' => 'required|image', 
             'description' => 'nullable|string',
             'opening_hours' => 'required|date_format:H:i',
             'closing_hours' => 'required|date_format:H:i',
-            'opening_days' => 'required|string', // Karena dalam request log kamu dikirim sebagai string, bukan array
+            'opening_days' => 'required|string', 
             'phone_number' => 'nullable|string|max:20',
-            'facility_images' => 'required|array', // Gambar fasilitas harus array
-            'facility_images.*' => 'image', // Validasi setiap elemen array sebagai gambar
+            'facility_images' => 'required|array', 
+            'facility_images.*' => 'image', 
+            'location' => 'required|string',
+            'location_tracking' => 'required|string',
         ]);
 
-        // Simpan gambar utama daycare
+        // Images on daycare
         if ($request->hasFile('images')) {
             $imageName = time() . '_' . $request->file('images')->getClientOriginalName();
             $imagePath = $request->file('images')->storeAs('daycare', $imageName, 'public'); // Menyimpan ke storage/app/public/daycare
-            $imageUrl = '/storage/' . $imagePath; // Membuat URL untuk diakses
+            $imageUrl = 'storage/' . $imagePath; // Membuat URL untuk diakses
         }
 
+        $userId = auth()->id();
+
         // Buat daycare baru
-        $daycare = Daycare::create($request->only(['name', 'description', 'opening_hours', 'closing_hours', 'opening_days', 'phone_number']) + ['images' => $imageUrl]);
+        $daycare = Daycare::create($request->only(['name', 'description', 'opening_hours', 'closing_hours', 'opening_days', 'phone_number', 'location', 'location_tracking']) + ['images' => $imageUrl, 'user_id' => $userId]);
 
         // Simpan gambar fasilitas
         foreach ($request->facility_images as $facilityImage) {
             if ($facilityImage) {
                 $facilityImageName = time() . '_' . $facilityImage->getClientOriginalName(); // Buat nama file unik
                 $facilityImagePath = $facilityImage->storeAs('daycare/facility', $facilityImageName, 'public'); // Menyimpan ke storage/app/public/daycare/facility
-                $facilityImageUrl = '/storage/' . $facilityImagePath; // Membuat URL untuk diakses
+                $facilityImageUrl = 'storage/' . $facilityImagePath; // Membuat URL untuk diakses
 
                 FacilityDaycareImage::create([
                     'daycare_id' => $daycare->id,
@@ -85,6 +90,8 @@ class DaycareController extends Controller
     {
         $daycare = Daycare::findOrFail($id);
 
+        $this->authorize('update', $daycare);
+
         $request->validate([
             'name' => 'string|max:255',
             'images' => 'array',
@@ -93,6 +100,8 @@ class DaycareController extends Controller
             'closing_hours' => 'date_format:H:i',
             'opening_days' => 'array',
             'phone_number' => 'nullable|string|max:20',
+            'location' => 'required|string',
+            'location_tracking' => 'required|string',
         ]);
 
         $daycare->update($request->all());
@@ -107,13 +116,16 @@ class DaycareController extends Controller
     public function destroy($id)
     {
         $daycare = Daycare::findOrFail($id);
+
+        $this->authorize('delete', $daycare);
+
         $daycare->delete();
         return response()->json(
             [
-                'statusCode' => 204,
+                'statusCode' => 200,
                 'message' => 'Daycare successfully deleted',
             ],
-            204,
+            200,
         );
     }
 

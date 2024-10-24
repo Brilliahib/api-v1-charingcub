@@ -33,7 +33,7 @@ class CheckRole
             return response()->json(
                 [
                     'statusCode' => 403,
-                    'message' => 'Unauthorized. Admin access required.',
+                    'message' => 'Unauthorized. You dont have access.',
                 ],
                 403,
             );

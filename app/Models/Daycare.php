@@ -9,25 +9,24 @@ class Daycare extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'name',
-        'images',
-        'description',
-        'opening_hours',
-        'closing_hours',
-        'opening_days',
-        'phone_number',
-        'rating',
-        'reviewers_count',
-    ];
+    protected $guarded = ['id'];
 
     public function reviews()
     {
         return $this->hasMany(Review::class);
     }
 
+    public function nannies()
+    {
+        return $this->hasMany(Nanny::class);
+    }
+
     public function facilityImages()
     {
         return $this->hasMany(FacilityDaycareImage::class);
+    }
+
+    public function user(){
+        return $this->belongsTo(User::class);
     }
 }

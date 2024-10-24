@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('daycares', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->string('images'); 
             $table->text('description')->nullable();
@@ -22,7 +23,8 @@ return new class extends Migration
             $table->string('phone_number')->nullable();
             $table->decimal('rating', 2, 1)->default(0);
             $table->integer('reviewers_count')->default(0);
-            $table->text('facilities_images')->nullable(); 
+            $table->string('location');
+            $table->string('location_tracking'); 
             $table->timestamps();
         });
     }
