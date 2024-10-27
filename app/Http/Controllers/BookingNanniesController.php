@@ -124,7 +124,6 @@ class BookingNanniesController extends Controller
         );
     }
 
-    // List all bookings for the authenticated user
     public function listUserBookings()
     {
         $bookings = Auth::user()->bookingNannies()->get();
@@ -133,6 +132,22 @@ class BookingNanniesController extends Controller
             [
                 'statusCode' => 200,
                 'message' => 'User bookings retrieved successfully.',
+                'data' => $bookings,
+            ],
+            200,
+        );
+    }
+
+    public function listNannyBookings()
+    {
+        $nannyId = Auth::id();
+
+        $bookings = BookingNannies::where('nanny_id', $nannyId)->get();
+
+        return response()->json(
+            [
+                'statusCode' => 200,
+                'message' => 'Nanny bookings retrieved successfully.',
                 'data' => $bookings,
             ],
             200,

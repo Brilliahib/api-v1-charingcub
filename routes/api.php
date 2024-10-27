@@ -66,11 +66,11 @@ Route::middleware('auth:api')->group(function () {
             Route::delete('/{id}', [DaycareController::class, 'destroy']); // Delete a daycare
         });
 
-        // Route untuk Daycare
+        // Route untuk Nannies
         Route::prefix('nannies')->group(function () {
-            Route::post('/', [NannyController::class, 'store']); // Create a new daycare
-            Route::put('/{id}', [NannyController::class, 'update']); // Update an existing daycare
-            Route::delete('/{id}', [NannyController::class, 'destroy']); // Delete a daycare
+            Route::post('/', [NannyController::class, 'store']); // Create a new nannies
+            Route::put('/{id}', [NannyController::class, 'update']); // Update an existing nannies
+            Route::delete('/{id}', [NannyController::class, 'destroy']); // Delete a nannies
             Route::post('/booking/{id}/approve', [BookingNanniesController::class, 'approveBooking']);
             Route::post('/booking/{id}/paid', [BookingNanniesController::class, 'paidConfirmationBooking']);
         });
@@ -94,6 +94,7 @@ Route::middleware('auth:api')->group(function () {
             Route::delete('/{id}', [NannyController::class, 'destroy']); // Delete a daycare
             Route::post('/booking/{id}/approve', [BookingNanniesController::class, 'approveBooking']);
             Route::post('/booking/{id}/paid', [BookingNanniesController::class, 'paidConfirmationBooking']);
+            Route::get('/booking/list', [BookingNanniesController::class, 'listNannyBookings']);
         });
     });
 });
