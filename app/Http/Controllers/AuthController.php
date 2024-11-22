@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\UpdateAccountRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -12,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -126,5 +128,37 @@ class AuthController extends Controller
             ],
             200,
         );
+    }
+
+    public function updateAccount(UpdateAccountRequest $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(
+                [
+                    'statusCode' => 401,
+                    'message' => 'User not authenticated',
+                ],
+                401
+            );
+        }
+
+        $data = $request->validated();
+
+        if ($request->hasFile('profile')) {
+            // Generate unique image name and save file to public storage
+            $imageName = time() . '_' . $request->file('profile')->getClientOriginalName();
+            $imagePath = $request->file('profile')->storeAs('profile/users', $imageName, 'public');
+            $data['profile'] = 'storage/' . $imagePath; // Store the public path in the database
+        }
+
+        $user->update($data);
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Account updated successfully',
+            'user' => $user,
+        ]);
     }
 }
