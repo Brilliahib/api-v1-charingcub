@@ -126,7 +126,7 @@ class BookingNanniesController extends Controller
 
     public function listUserBookings()
     {
-        $bookings = Auth::user()->bookingNannies()->get();
+        $bookings = Auth::user()->bookingNannies()->with('nannies.user')->get();
 
         return response()->json(
             [
@@ -138,11 +138,40 @@ class BookingNanniesController extends Controller
         );
     }
 
+    public function getUserBookingDetail($id)
+    {
+        $booking = BookingNannies::with(['user', 'nannies.user'])->findOrFail($id);
+
+        if ($booking->user_id !== auth()->id()) {
+            return response()->json(
+                [
+                    'statusCode' => 403,
+                    'message' => 'You are not authorized to view this booking.',
+                    'data' => null,
+                ],
+                403,
+            );
+        }
+
+        return response()->json(
+            [
+                'statusCode' => 200,
+                'message' => 'Booking details retrieved successfully.',
+                'data' => $booking,
+            ],
+            200,
+        );
+    }
+
     public function listNannyBookings()
     {
-        $nannyId = Auth::id();
+        $user = Auth::user();
 
-        $bookings = BookingNannies::where('nanny_id', $nannyId)->get();
+        $nannyProfile = $user->nannies;
+
+        $bookings = BookingNannies::where('nanny_id', $nannyProfile->id)
+            ->with('user')
+            ->get();
 
         return response()->json(
             [

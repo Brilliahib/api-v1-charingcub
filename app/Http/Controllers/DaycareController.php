@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CreateNanniesFromDaycareRequest;
 use App\Models\Daycare;
 use App\Models\FacilityDaycareImage;
 use App\Models\Review;
+use App\Models\User;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class DaycareController extends Controller
@@ -13,7 +18,7 @@ class DaycareController extends Controller
     // Menampilkan semua daycare
     public function index()
     {
-        $daycares = Daycare::with('facilityImages')->get();
+        $daycares = Daycare::with('facilityImages', 'nannies')->get();
         return response()->json([
             'statusCode' => 200,
             'message' => 'Successfully retrieved daycares',
@@ -24,7 +29,7 @@ class DaycareController extends Controller
     // Menampilkan daycare berdasarkan ID
     public function show($id)
     {
-        $daycare = Daycare::with('facilityImages')->findOrFail($id);
+        $daycare = Daycare::with('facilityImages', 'nannies.user', 'reviews.user')->findOrFail($id);
         return response()->json([
             'statusCode' => 200,
             'message' => 'Successfully retrieved daycare',
@@ -34,19 +39,19 @@ class DaycareController extends Controller
 
     public function store(Request $request)
     {
-
         $request->validate([
             'name' => 'required|string|max:255',
-            'images' => 'required|image', 
+            'images' => 'required|image',
             'description' => 'nullable|string',
             'opening_hours' => 'required|date_format:H:i',
             'closing_hours' => 'required|date_format:H:i',
-            'opening_days' => 'required|string', 
+            'opening_days' => 'required|string',
             'phone_number' => 'nullable|string|max:20',
-            'facility_images' => 'required|array', 
-            'facility_images.*' => 'image', 
+            'facility_images' => 'required|array',
+            'facility_images.*' => 'image',
             'location' => 'required|string',
             'location_tracking' => 'required|string',
+            'price' => 'required|integer',
         ]);
 
         // Images on daycare
@@ -59,7 +64,7 @@ class DaycareController extends Controller
         $userId = auth()->id();
 
         // Buat daycare baru
-        $daycare = Daycare::create($request->only(['name', 'description', 'opening_hours', 'closing_hours', 'opening_days', 'phone_number', 'location', 'location_tracking']) + ['images' => $imageUrl, 'user_id' => $userId]);
+        $daycare = Daycare::create($request->only(['name', 'description', 'opening_hours', 'closing_hours', 'opening_days', 'phone_number', 'location', 'location_tracking', 'price']) + ['images' => $imageUrl, 'user_id' => $userId]);
 
         // Simpan gambar fasilitas
         foreach ($request->facility_images as $facilityImage) {
@@ -102,9 +107,11 @@ class DaycareController extends Controller
             'phone_number' => 'nullable|string|max:20',
             'location' => 'required|string',
             'location_tracking' => 'required|string',
+            'price' => 'required|integer',
         ]);
 
         $daycare->update($request->all());
+
         return response()->json([
             'statusCode' => 200,
             'message' => 'Daycare successfully updated',
@@ -159,5 +166,85 @@ class DaycareController extends Controller
             ],
             201,
         );
+    }
+
+    public function createNannies(CreateNanniesFromDaycareRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        // Validasi role yang diizinkan
+        if (!in_array($data['role'], ['nannies'])) {
+            throw new HttpResponseException(
+                response(
+                    [
+                        'statusCode' => 400,
+                        'message' => 'Invalid role selected',
+                    ],
+                    400,
+                ),
+            );
+        }
+
+        if (User::where('email', $data['email'])->exists()) {
+            throw new HttpResponseException(
+                response(
+                    [
+                        'statusCode' => 400,
+                        'message' => 'Email already in use',
+                    ],
+                    400,
+                ),
+            );
+        }
+
+        // Membuat user baru dengan role yang dipilih
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+            'role' => $data['role'], // Menyimpan role
+        ]);
+
+        return response()->json(
+            [
+                'statusCode' => 201,
+                'message' => 'User is successfully created',
+                'data' => $user,
+            ],
+            201,
+        );
+    }
+
+    public function getUserDaycare()
+    {
+        $user = auth()->user();
+
+        if ($user->role !== 'daycare') {
+            return response()->json(
+                [
+                    'statusCode' => 403,
+                    'message' => 'Access denied',
+                ],
+                403,
+            );
+        }
+
+        $daycare = Daycare::with('facilityImages', 'nannies')
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$daycare) {
+            return response()->json([
+                'statusCode' => 200,
+                'message' => 'You have not created a daycare profile yet',
+                'data' => null,
+            ]);
+        }
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Successfully retrieved daycare profile',
+            'data' => $daycare,
+        ]);
     }
 }

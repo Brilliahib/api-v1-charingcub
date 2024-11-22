@@ -15,7 +15,12 @@ class NannyController extends Controller
             return [
                 'id' => $nanny->id,
                 'name' => $nanny->user->name,
+                'daycare_id' => $nanny->daycare->id,
                 'daycare_name' => $nanny->daycare->name,
+                'daycare_profile' => $nanny->daycare->images,
+                'daycare_location' => $nanny->daycare->location,
+                'rating' => $nanny->daycare->rating,
+                'rating_count' => $nanny->daycare->reviewers_count,
                 'images' => $nanny->images,
                 'gender' => $nanny->gender,
                 'age' => $nanny->age,
@@ -87,7 +92,12 @@ class NannyController extends Controller
         $nannyData = [
             'id' => $nanny->id,
             'name' => $nanny->user->name,
+            'daycare_id' => $nanny->daycare->id,
             'daycare_name' => $nanny->daycare->name,
+            'daycare_profile' => $nanny->daycare->images,
+            'daycare_location' => $nanny->daycare->location,
+            'rating' => $nanny->daycare->rating,
+            'rating_count' => $nanny->daycare->reviewers_count,
             'images' => $nanny->images,
             'gender' => $nanny->gender,
             'age' => $nanny->age,
@@ -163,6 +173,39 @@ class NannyController extends Controller
         return response()->json([
             'statusCode' => 200,
             'message' => 'Nanny deleted successfully',
+        ]);
+    }
+
+    public function getUserNanny()
+    {
+        $user = auth()->user();
+
+        if ($user->role !== 'nannies') {
+            return response()->json(
+                [
+                    'statusCode' => 403,
+                    'message' => 'Access denied',
+                ],
+                403,
+            );
+        }
+
+        $nanny = Nanny::with('daycare')
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$nanny) {
+            return response()->json([
+                'statusCode' => 200,
+                'message' => 'You have not created a nanny profile yet',
+                'data' => null
+            ]);
+        }
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Successfully retrieved nanny profile',
+            'data' => $nanny,
         ]);
     }
 }

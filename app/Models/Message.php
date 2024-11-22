@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class BookingNannies extends Model
+class Message extends Model
 {
     use HasFactory;
     protected $guarded = ['id'];
@@ -15,8 +15,8 @@ class BookingNannies extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function nannies()
+    public function chatRoom()
     {
-        return $this->belongsTo(Nanny::class, 'nanny_id');
+        return $this->belongsTo(ChatRoom::class);
     }
 }

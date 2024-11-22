@@ -25,6 +25,7 @@ return new class extends Migration
             $table->integer('reviewers_count')->default(0);
             $table->string('location');
             $table->string('location_tracking'); 
+            $table->integer('price');
             $table->timestamps();
         });
     }

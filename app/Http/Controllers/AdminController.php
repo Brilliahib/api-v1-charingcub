@@ -56,4 +56,33 @@ class AdminController extends Controller
             'data' => $user,
         ], 201);
     }
+
+    public function getAllUsers(): JsonResponse
+    {
+        $users = User::all(); 
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'All users retrieved successfully',
+            'data' => $users,
+        ], 200);
+    }
+
+    public function getUserDetail($id): JsonResponse
+    {
+        $user = User::with(['daycare', 'nannies', 'reviews', 'bookingNannies'])->find($id);
+
+        if (!$user) {
+            return response()->json([
+                'statusCode' => 404,
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'User detail retrieved successfully',
+            'data' => $user,
+        ], 200);
+    }
 }

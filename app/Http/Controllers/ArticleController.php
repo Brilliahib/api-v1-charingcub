@@ -90,90 +90,89 @@ class ArticleController extends Controller
     }
 
     // Update an article by ID
-public function update(UpdateArticleRequest $request, $id): JsonResponse
-{
-    $article = Article::find($id);
+    public function update(UpdateArticleRequest $request, $id): JsonResponse
+    {
+        $article = Article::find($id);
 
-    if (!$article) {
+        if (!$article) {
+            return response()->json(
+                [
+                    'statusCode' => 404,
+                    'error' => 'Article not found',
+                ],
+                404,
+            );
+        }
+
+        $data = $request->validated();
+
+        // Handle image upload if a new image is provided
+        if ($request->hasFile('image')) {
+            // Hapus image lama dari storage jika ada
+            if ($article->image) {
+                // Menghapus file dari folder 'article'
+                Storage::disk('public')->delete($article->image);
+            }
+
+            // Upload image baru
+            $originalFileName = $request->file('image')->getClientOriginalName();
+            $imageName = time() . '_' . $originalFileName;
+            $request->file('image')->storeAs('article', $imageName, 'public');
+
+            // Update path image di data
+            $data['image'] = 'article/' . $imageName; // Hanya simpan path relatif
+        }
+
+        // Update article
+        $article->update($data);
+
         return response()->json(
             [
-                'statusCode' => 404,
-                'error' => 'Article not found',
+                'statusCode' => 200,
+                'message' => 'Article successfully updated',
+                'data' => [
+                    'id' => $article->id,
+                    'title' => $article->title,
+                    'content' => $article->content,
+                    'image' => isset($data['image']) ? $data['image'] : $article->image,
+                    'created_at' => $article->created_at,
+                    'updated_at' => $article->updated_at,
+                ],
             ],
-            404,
+            200,
         );
     }
 
-    $data = $request->validated();
+    // Delete an article by ID
+    public function destroy($id): JsonResponse
+    {
+        $article = Article::find($id);
 
-    // Handle image upload if a new image is provided
-    if ($request->hasFile('image')) {
-        // Hapus image lama dari storage jika ada
+        if (!$article) {
+            return response()->json(
+                [
+                    'statusCode' => 404,
+                    'error' => 'Article not found',
+                ],
+                404,
+            );
+        }
+
+        // Hapus image dari storage jika ada
         if ($article->image) {
             // Menghapus file dari folder 'article'
             Storage::disk('public')->delete($article->image);
         }
 
-        // Upload image baru
-        $originalFileName = $request->file('image')->getClientOriginalName();
-        $imageName = time() . '_' . $originalFileName;
-        $request->file('image')->storeAs('article', $imageName, 'public');
+        // Hapus artikel
+        $article->delete();
 
-        // Update path image di data
-        $data['image'] = 'article/' . $imageName; // Hanya simpan path relatif
-    }
-
-    // Update article
-    $article->update($data);
-
-    return response()->json(
-        [
-            'statusCode' => 200,
-            'message' => 'Article successfully updated',
-            'data' => [
-                'id' => $article->id,
-                'title' => $article->title,
-                'content' => $article->content,
-                'image' => isset($data['image']) ? $data['image'] : $article->image,
-                'created_at' => $article->created_at,
-                'updated_at' => $article->updated_at,
-            ],
-        ],
-        200,
-    );
-}
-
-// Delete an article by ID
-public function destroy($id): JsonResponse
-{
-    $article = Article::find($id);
-
-    if (!$article) {
         return response()->json(
             [
-                'statusCode' => 404,
-                'error' => 'Article not found',
+                'statusCode' => 200,
+                'message' => 'Article successfully deleted',
             ],
-            404,
+            200,
         );
     }
-
-    // Hapus image dari storage jika ada
-    if ($article->image) {
-        // Menghapus file dari folder 'article'
-        Storage::disk('public')->delete($article->image);
-    }
-
-    // Hapus artikel
-    $article->delete();
-
-    return response()->json(
-        [
-            'statusCode' => 200,
-            'message' => 'Article successfully deleted',
-        ],
-        200,
-    );
-}
-
 }
