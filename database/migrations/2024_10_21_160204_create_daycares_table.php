@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('location');
             $table->string('location_tracking'); 
             $table->integer('price');
+            $table->boolean('is_disability');
             $table->timestamps();
         });
     }

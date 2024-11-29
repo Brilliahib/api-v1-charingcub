@@ -26,6 +26,19 @@ class DaycareController extends Controller
         ]);
     }
 
+    public function getAllWithDisability()
+{
+    $daycares = Daycare::with('facilityImages', 'nannies')
+                       ->where('is_disability', 1)
+                       ->get();
+
+    return response()->json([
+        'statusCode' => 200,
+        'message' => 'Successfully retrieved daycares with disability',
+        'data' => $daycares,
+    ]);
+}
+
     // Menampilkan daycare berdasarkan ID
     public function show($id)
     {
@@ -52,6 +65,7 @@ class DaycareController extends Controller
             'location' => 'required|string',
             'location_tracking' => 'required|string',
             'price' => 'required|integer',
+            'is_disability' => 'required|boolean'
         ]);
 
         // Images on daycare
@@ -64,7 +78,7 @@ class DaycareController extends Controller
         $userId = auth()->id();
 
         // Buat daycare baru
-        $daycare = Daycare::create($request->only(['name', 'description', 'opening_hours', 'closing_hours', 'opening_days', 'phone_number', 'location', 'location_tracking', 'price']) + ['images' => $imageUrl, 'user_id' => $userId]);
+        $daycare = Daycare::create($request->only(['name', 'description', 'opening_hours', 'closing_hours', 'opening_days', 'phone_number', 'location', 'location_tracking', 'price', 'is_disability']) + ['images' => $imageUrl, 'user_id' => $userId]);
 
         // Simpan gambar fasilitas
         foreach ($request->facility_images as $facilityImage) {
@@ -108,6 +122,7 @@ class DaycareController extends Controller
             'location' => 'required|string',
             'location_tracking' => 'required|string',
             'price' => 'required|integer',
+            'is_disability' => 'required|boolean'
         ]);
 
         $daycare->update($request->all());
