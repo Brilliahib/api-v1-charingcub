@@ -147,10 +147,9 @@ class AuthController extends Controller
         $data = $request->validated();
 
         if ($request->hasFile('profile')) {
-            // Generate unique image name and save file to public storage
             $imageName = time() . '_' . $request->file('profile')->getClientOriginalName();
             $imagePath = $request->file('profile')->storeAs('profile/users', $imageName, 'public');
-            $data['profile'] = 'storage/' . $imagePath; // Store the public path in the database
+            $data['profile'] = 'storage/' . $imagePath; 
         }
 
         $user->update($data);

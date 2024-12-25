@@ -163,7 +163,7 @@ class BookingDaycareController extends Controller
     {
         $user = Auth::user();
 
-        $daycareProfile = $user->daycares;
+        $daycareProfile = $user->daycare;
 
         $bookings = BookingDaycare::where('daycare_id', $daycareProfile->id)
             ->with('user')

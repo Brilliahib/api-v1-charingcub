@@ -27,17 +27,15 @@ class DaycareController extends Controller
     }
 
     public function getAllWithDisability()
-{
-    $daycares = Daycare::with('facilityImages', 'nannies')
-                       ->where('is_disability', 1)
-                       ->get();
+    {
+        $daycares = Daycare::with('facilityImages', 'nannies')->where('is_disability', 1)->get();
 
-    return response()->json([
-        'statusCode' => 200,
-        'message' => 'Successfully retrieved daycares with disability',
-        'data' => $daycares,
-    ]);
-}
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Successfully retrieved daycares with disability',
+            'data' => $daycares,
+        ]);
+    }
 
     // Menampilkan daycare berdasarkan ID
     public function show($id)
@@ -65,7 +63,7 @@ class DaycareController extends Controller
             'location' => 'required|string',
             'location_tracking' => 'required|string',
             'price' => 'required|integer',
-            'is_disability' => 'required|boolean'
+            'is_disability' => 'required|boolean',
         ]);
 
         // Images on daycare
@@ -122,7 +120,7 @@ class DaycareController extends Controller
             'location' => 'required|string',
             'location_tracking' => 'required|string',
             'price' => 'required|integer',
-            'is_disability' => 'required|boolean'
+            'is_disability' => 'required|boolean',
         ]);
 
         $daycare->update($request->all());
@@ -260,6 +258,41 @@ class DaycareController extends Controller
             'statusCode' => 200,
             'message' => 'Successfully retrieved daycare profile',
             'data' => $daycare,
+        ]);
+    }
+
+    public function getNanniesByDaycareId()
+    {
+        $user = auth()->user();
+
+        if ($user->role !== 'daycare') {
+            return response()->json(
+                [
+                    'statusCode' => 403,
+                    'message' => 'Access denied',
+                ],
+                403,
+            );
+        }
+
+        $daycare = Daycare::where('user_id', $user->id)->first();
+
+        if (!$daycare) {
+            return response()->json(
+                [
+                    'statusCode' => 404,
+                    'message' => 'Daycare not found',
+                ],
+                404,
+            );
+        }
+
+        $nannies = $daycare->nannies;
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Successfully retrieved nannies for the daycare',
+            'data' => $nannies,
         ]);
     }
 }
