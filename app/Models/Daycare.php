@@ -11,6 +11,11 @@ class Daycare extends Model
 
     protected $guarded = ['id'];
 
+    protected $casts = [
+        'longitude' => 'float',
+        'latitude' => 'float',
+    ];    
+
     public function reviews()
     {
         return $this->hasMany(Review::class);

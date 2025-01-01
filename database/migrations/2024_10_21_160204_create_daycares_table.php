@@ -19,14 +19,21 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->time('opening_hours');
             $table->time('closing_hours');
-            $table->string('opening_days'); 
+            $table->string('opening_days');
+            $table->integer('price_half');
+            $table->integer('price_full'); 
             $table->string('phone_number')->nullable();
             $table->decimal('rating', 2, 1)->default(0);
             $table->integer('reviewers_count')->default(0);
             $table->string('location');
+            $table->double('longitude', 20, 15)->nullable();
+            $table->double('latitude', 20, 15)->nullable();            
+            $table->text('address');
             $table->string('location_tracking'); 
-            $table->integer('price');
             $table->boolean('is_disability');
+            $table->string('bank_account');
+            $table->string('bank_account_number');
+            $table->string('bank_account_name');
             $table->timestamps();
         });
     }

@@ -16,9 +16,17 @@ use Illuminate\Support\Facades\Log;
 class DaycareController extends Controller
 {
     // Menampilkan semua daycare
-    public function index()
+    public function index(Request $request)
     {
-        $daycares = Daycare::with('facilityImages', 'nannies')->get();
+        $query = Daycare::with('facilityImages', 'nannies');
+
+        // Memeriksa apakah ada parameter 'location' dalam query string
+        if ($request->has('location')) {
+            $query->where('location', 'like', '%' . $request->input('location') . '%');
+        }
+
+        $daycares = $query->get();
+
         return response()->json([
             'statusCode' => 200,
             'message' => 'Successfully retrieved daycares',
@@ -50,6 +58,91 @@ class DaycareController extends Controller
 
     public function store(Request $request)
     {
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'images' => 'required|image',
+                'description' => 'nullable|string',
+                'opening_hours' => 'required|date_format:H:i',
+                'closing_hours' => 'required|date_format:H:i',
+                'opening_days' => 'required|string',
+                'phone_number' => 'nullable|string|max:20',
+                'facility_images' => 'required|array',
+                'facility_images.*' => 'image',
+                'location' => 'required|string',
+                'address' => 'required|string',
+                'longitude' => 'nullable|numeric',
+                'latitude' => 'nullable|numeric',
+                'location_tracking' => 'required|string',
+                'price_half' => 'required|integer',
+                'price_full' => 'required|integer',
+                'is_disability' => 'required|boolean',
+                'bank_account' => 'required|string',
+                'bank_account_number' => 'required|string',
+                'bank_account_name' => 'required|string',
+            ]);
+
+            Log::info('Request validated:', $request->all());
+
+            // Images on daycare
+            if ($request->hasFile('images')) {
+                $imageName = time() . '_' . $request->file('images')->getClientOriginalName();
+                $imagePath = $request->file('images')->storeAs('daycare', $imageName, 'public'); // Menyimpan ke storage/app/public/daycare
+                $imageUrl = 'storage/' . $imagePath; // Membuat URL untuk diakses
+            }
+
+            $userId = auth()->id();
+
+            // Buat daycare baru
+            $daycare = Daycare::create($request->only(['name', 'description', 'opening_hours', 'closing_hours', 'opening_days', 'phone_number', 'location', 'longitude', 'latitude', 'location_tracking', 'price', 'is_disability', 'address', 'price_half', 'price_full', 'bank_account', 'bank_account_number', 'bank_account_name']) + ['images' => $imageUrl, 'user_id' => $userId]);
+
+
+            // Simpan gambar fasilitas
+            foreach ($request->facility_images as $facilityImage) {
+                if ($facilityImage) {
+                    $facilityImageName = time() . '_' . $facilityImage->getClientOriginalName(); // Buat nama file unik
+                    $facilityImagePath = $facilityImage->storeAs('daycare/facility', $facilityImageName, 'public'); // Menyimpan ke storage/app/public/daycare/facility
+                    $facilityImageUrl = 'storage/' . $facilityImagePath; // Membuat URL untuk diakses
+
+                    FacilityDaycareImage::create([
+                        'daycare_id' => $daycare->id,
+                        'image_url' => $facilityImageUrl, // Menyimpan URL gambar fasilitas
+                    ]);
+                }
+            }
+
+            return response()->json(
+                [
+                    'statusCode' => 201,
+                    'message' => 'Daycare successfully created',
+                    'data' => $daycare,
+                ],
+                201,
+            );
+        } catch (\Exception $e) {
+            Log::error('Error occurred:', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            return response()->json(
+                [
+                    'statusCode' => 500,
+                    'message' => 'An unexpected error occurred',
+                ],
+                500,
+            );
+        }
+    }
+
+    // Mengupdate daycare
+    public function update(Request $request, $id)
+    {
+        $daycare = Daycare::findOrFail($id);
+
+        $this->authorize('update', $daycare);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'images' => 'required|image',
@@ -61,66 +154,16 @@ class DaycareController extends Controller
             'facility_images' => 'required|array',
             'facility_images.*' => 'image',
             'location' => 'required|string',
+            'address' => 'required|string',
+            'longitude' => 'nullable|numeric',
+            'latitude' => 'nullable|numeric',
             'location_tracking' => 'required|string',
-            'price' => 'required|integer',
+            'price_half' => 'required|integer',
+            'price_full' => 'required|integer',
             'is_disability' => 'required|boolean',
-        ]);
-
-        // Images on daycare
-        if ($request->hasFile('images')) {
-            $imageName = time() . '_' . $request->file('images')->getClientOriginalName();
-            $imagePath = $request->file('images')->storeAs('daycare', $imageName, 'public'); // Menyimpan ke storage/app/public/daycare
-            $imageUrl = 'storage/' . $imagePath; // Membuat URL untuk diakses
-        }
-
-        $userId = auth()->id();
-
-        // Buat daycare baru
-        $daycare = Daycare::create($request->only(['name', 'description', 'opening_hours', 'closing_hours', 'opening_days', 'phone_number', 'location', 'location_tracking', 'price', 'is_disability']) + ['images' => $imageUrl, 'user_id' => $userId]);
-
-        // Simpan gambar fasilitas
-        foreach ($request->facility_images as $facilityImage) {
-            if ($facilityImage) {
-                $facilityImageName = time() . '_' . $facilityImage->getClientOriginalName(); // Buat nama file unik
-                $facilityImagePath = $facilityImage->storeAs('daycare/facility', $facilityImageName, 'public'); // Menyimpan ke storage/app/public/daycare/facility
-                $facilityImageUrl = 'storage/' . $facilityImagePath; // Membuat URL untuk diakses
-
-                FacilityDaycareImage::create([
-                    'daycare_id' => $daycare->id,
-                    'image_url' => $facilityImageUrl, // Menyimpan URL gambar fasilitas
-                ]);
-            }
-        }
-
-        return response()->json(
-            [
-                'statusCode' => 201,
-                'message' => 'Daycare successfully created',
-                'data' => $daycare,
-            ],
-            201,
-        );
-    }
-
-    // Mengupdate daycare
-    public function update(Request $request, $id)
-    {
-        $daycare = Daycare::findOrFail($id);
-
-        $this->authorize('update', $daycare);
-
-        $request->validate([
-            'name' => 'string|max:255',
-            'images' => 'array',
-            'description' => 'nullable|string',
-            'opening_hours' => 'date_format:H:i',
-            'closing_hours' => 'date_format:H:i',
-            'opening_days' => 'array',
-            'phone_number' => 'nullable|string|max:20',
-            'location' => 'required|string',
-            'location_tracking' => 'required|string',
-            'price' => 'required|integer',
-            'is_disability' => 'required|boolean',
+            'bank_account' => 'required|string',
+            'bank_account_number' => 'required|string',
+            'bank_account_name' => 'required|string',
         ]);
 
         $daycare->update($request->all());

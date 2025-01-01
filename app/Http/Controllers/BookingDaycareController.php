@@ -68,17 +68,6 @@ class BookingDaycareController extends Controller
 
         $booking = BookingDaycare::findOrFail($id);
 
-        if (!$booking->is_approved) {
-            return response()->json(
-                [
-                    'statusCode' => 403,
-                    'message' => 'Booking has not been approved yet.',
-                    'data' => null,
-                ],
-                403,
-            );
-        }
-
         if ($request->hasFile('payment_proof')) {
             $originalFileName = $request->file('payment_proof')->getClientOriginalName();
             $paymentProofName = time() . '_' . $originalFileName;
@@ -120,7 +109,7 @@ class BookingDaycareController extends Controller
     // List user bookings
     public function listUserBookings()
     {
-        $bookings = Auth::user()->bookingDaycares()->with('daycare.user')->get();
+        $bookings = Auth::user()->bookingDaycares()->with('daycares')->get();
 
         return response()->json(
             [
@@ -135,18 +124,7 @@ class BookingDaycareController extends Controller
     // Get booking details for a user
     public function getUserBookingDetail($id)
     {
-        $booking = BookingDaycare::with(['user', 'daycare.user'])->findOrFail($id);
-
-        if ($booking->user_id !== auth()->id()) {
-            return response()->json(
-                [
-                    'statusCode' => 403,
-                    'message' => 'You are not authorized to view this booking.',
-                    'data' => null,
-                ],
-                403,
-            );
-        }
+        $booking = BookingDaycare::with(['user', 'daycares.user'])->findOrFail($id);
 
         return response()->json(
             [

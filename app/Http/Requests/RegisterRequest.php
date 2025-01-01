@@ -28,6 +28,7 @@ class RegisterRequest extends FormRequest
             'password' => 'required|string|min:8|confirmed',
             'password_confirmation' => 'required|string|min:8',
             'name' => ['required', 'max:100'],
+            'role' => ['required', 'string', 'in:user,daycare,nannies'],
         ];
     }
 
