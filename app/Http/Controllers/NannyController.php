@@ -80,7 +80,7 @@ class NannyController extends Controller
      */
     public function show($id)
     {
-        $nanny = Nanny::with('user', 'daycare')->find($id);
+        $nanny = Nanny::with('user', 'daycare', 'daycare.reviews')->find($id);
 
         if (!$nanny) {
             return response()->json([
@@ -89,6 +89,16 @@ class NannyController extends Controller
             ]);
         }
 
+        $reviews = $nanny->daycare->reviews->map(function ($review) {
+            return [
+                'id' => $review->id,
+                'name' => $review->user->name,
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'created_at' => $review->created_at,
+            ];
+        });
+
         $nannyData = [
             'id' => $nanny->id,
             'name' => $nanny->user->name,
@@ -96,6 +106,8 @@ class NannyController extends Controller
             'daycare_name' => $nanny->daycare->name,
             'daycare_profile' => $nanny->daycare->images,
             'daycare_location' => $nanny->daycare->location,
+            'daycare_latitude' => $nanny->daycare->latitude,
+            'daycare_longitude' => $nanny->daycare->longitude,
             'rating' => $nanny->daycare->rating,
             'rating_count' => $nanny->daycare->reviewers_count,
             'images' => $nanny->images,
@@ -107,6 +119,7 @@ class NannyController extends Controller
             'experience_description' => $nanny->experience_description,
             'created_at' => $nanny->created_at,
             'updated_at' => $nanny->updated_at,
+            'reviews' => $reviews, 
         ];
 
         return response()->json([
