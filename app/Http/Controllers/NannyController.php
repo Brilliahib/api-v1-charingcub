@@ -62,7 +62,7 @@ class NannyController extends Controller
         if ($request->hasFile('images')) {
             $imageName = time() . '_' . $request->file('images')->getClientOriginalName();
             $imagePath = $request->file('images')->storeAs('nannies', $imageName, 'public'); // Menyimpan ke storage/app/public/daycare
-            $imageUrl = 'storage/' . $imagePath; // Membuat URL untuk diakses
+            $imageUrl = 'public/' . $imagePath; // Membuat URL untuk diakses
         }
 
         // Buat nanny baru dengan data yang sudah dimodifikasi

@@ -88,7 +88,7 @@ class DaycareController extends Controller
             if ($request->hasFile('images')) {
                 $imageName = time() . '_' . $request->file('images')->getClientOriginalName();
                 $imagePath = $request->file('images')->storeAs('daycare', $imageName, 'public'); // Menyimpan ke storage/app/public/daycare
-                $imageUrl = 'storage/' . $imagePath; // Membuat URL untuk diakses
+                $imageUrl = 'public/' . $imagePath; // Membuat URL untuk diakses
             }
 
             $userId = auth()->id();
@@ -102,7 +102,7 @@ class DaycareController extends Controller
                 if ($facilityImage) {
                     $facilityImageName = time() . '_' . $facilityImage->getClientOriginalName(); // Buat nama file unik
                     $facilityImagePath = $facilityImage->storeAs('daycare/facility', $facilityImageName, 'public'); // Menyimpan ke storage/app/public/daycare/facility
-                    $facilityImageUrl = 'storage/' . $facilityImagePath; // Membuat URL untuk diakses
+                    $facilityImageUrl = 'public/' . $facilityImagePath; // Membuat URL untuk diakses
 
                     FacilityDaycareImage::create([
                         'daycare_id' => $daycare->id,

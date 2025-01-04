@@ -74,7 +74,7 @@ class BookingDaycareController extends Controller
 
             $request->file('payment_proof')->storeAs('daycares/payment', $paymentProofName, 'public');
 
-            $booking->payment_proof = 'storage/daycares/payment/' . $paymentProofName;
+            $booking->payment_proof = 'public/daycares/payment/' . $paymentProofName;
         }
 
         $booking->save();

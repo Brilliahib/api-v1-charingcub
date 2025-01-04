@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('article_type_id');
             $table->string('title');
+            $table->string('slug')->unique();
             $table->string('image')->nullable();
             $table->text('content');
             $table->timestamps();

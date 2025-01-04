@@ -27,7 +27,7 @@ class ArticleController extends Controller
             $request->file('image')->storeAs('article', $imageName, 'public');
 
             // Tambahkan nama file ke data dengan path 'storage/article/nama_file'
-            $data['image'] = 'storage/article/' . $imageName; // Menyimpan path dengan folder
+            $data['image'] = 'public/article/' . $imageName; // Menyimpan path dengan folder
         }
 
         $article = Article::create($data);

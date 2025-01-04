@@ -91,7 +91,7 @@ class BookingNanniesController extends Controller
             $request->file('payment_proof')->storeAs('nannies/payment', $paymentProofName, 'public');
 
             // Simpan path payment_proof ke database
-            $booking->payment_proof = 'storage/nannies/payment/' . $paymentProofName;
+            $booking->payment_proof = 'public/nannies/payment/' . $paymentProofName;
         }
 
         // Simpan perubahan ke database
