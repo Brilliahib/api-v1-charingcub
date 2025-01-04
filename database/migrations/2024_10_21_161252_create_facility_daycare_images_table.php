@@ -13,9 +13,11 @@ return new class extends Migration
     {
         Schema::create('facility_daycare_images', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('daycare_id')->constrained()->onDelete('cascade'); 
+            $table->uuid('daycare_id');
             $table->string('image_url'); 
             $table->timestamps();
+
+            $table->foreign('daycare_id')->references('id')->on('daycares')->onDelete('cascade');
         });
     }
 

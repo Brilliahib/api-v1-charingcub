@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('nannies', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('daycare_id')->nullable()->constrained()->onDelete('cascade');
+            $table->uuid('daycare_id');
             $table->string('images');
             $table->string('gender');
             $table->integer('age');
@@ -23,6 +23,8 @@ return new class extends Migration
             $table->integer('price_full');
             $table->text('experience_description');
             $table->timestamps();
+
+            $table->foreign('daycare_id')->references('id')->on('daycares')->onDelete('cascade');
         });
     }
 

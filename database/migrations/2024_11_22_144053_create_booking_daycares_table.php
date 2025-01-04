@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('booking_daycares', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('daycare_id')->constrained('daycares')->onDelete('cascade');
+            $table->uuid('daycare_id');
             $table->string('name_babies');
             $table->integer('age_babies');
             $table->text('special_request')->nullable();
@@ -24,6 +24,8 @@ return new class extends Migration
             $table->boolean('is_paid')->default(false);
             $table->string('payment_proof')->nullable();
             $table->timestamps();
+
+            $table->foreign('daycare_id')->references('id')->on('daycares')->onDelete('cascade');
         });
     }
 
