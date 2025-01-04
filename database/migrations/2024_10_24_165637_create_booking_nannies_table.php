@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('booking_nannies', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->uuid('id')->primary();
+            $table->uuid('user_id');
             $table->uuid('nanny_id');
             $table->string('name_babies');
             $table->integer('age_babies');
@@ -26,6 +26,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('nanny_id')->references('id')->on('nannies')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

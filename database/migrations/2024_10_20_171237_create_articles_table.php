@@ -12,12 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('articles', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('article_type_id')->constrained()->onDelete('cascade');
+            $table->uuid('id')->primary();
+            $table->uuid('article_type_id');
             $table->string('title');
             $table->string('image')->nullable();
             $table->text('content');
             $table->timestamps();
+
+            $table->foreign('article_type_id')->references('id')->on('article_types')->onDelete('cascade');
         });
     }
 

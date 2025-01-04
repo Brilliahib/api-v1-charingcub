@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('nannies', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->uuid('user_id');
             $table->uuid('daycare_id');
             $table->string('images');
             $table->string('gender');
@@ -25,6 +25,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('daycare_id')->references('id')->on('daycares')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
