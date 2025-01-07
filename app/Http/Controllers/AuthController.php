@@ -150,7 +150,7 @@ class AuthController extends Controller
         if ($request->hasFile('profile')) {
             $imageName = time() . '_' . $request->file('profile')->getClientOriginalName();
             $imagePath = $request->file('profile')->storeAs('profile/users', $imageName, 'public');
-            $data['profile'] = 'storage/' . $imagePath; 
+            $data['profile'] = 'public/' . $imagePath; 
         }
 
         $user->update($data);

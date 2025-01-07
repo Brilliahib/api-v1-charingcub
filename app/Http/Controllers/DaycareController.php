@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CreateNanniesFromDaycareRequest;
 use App\Models\Daycare;
+use App\Models\DaycarePriceList;
 use App\Models\FacilityDaycareImage;
 use App\Models\Review;
 use App\Models\User;
@@ -80,35 +81,44 @@ class DaycareController extends Controller
                 'bank_account' => 'required|string',
                 'bank_account_number' => 'required|string',
                 'bank_account_name' => 'required|string',
+                'price_lists' => 'required|array', 
+                'price_lists.*.age_start' => 'required|string', 
+                'price_lists.*.age_end' => 'required|string', 
+                'price_lists.*.price' => 'required|integer', 
             ]);
 
             Log::info('Request validated:', $request->all());
 
-            // Images on daycare
             if ($request->hasFile('images')) {
                 $imageName = time() . '_' . $request->file('images')->getClientOriginalName();
-                $imagePath = $request->file('images')->storeAs('daycare', $imageName, 'public'); // Menyimpan ke storage/app/public/daycare
-                $imageUrl = 'public/' . $imagePath; // Membuat URL untuk diakses
+                $imagePath = $request->file('images')->storeAs('daycare', $imageName, 'public'); 
+                $imageUrl = 'public/' . $imagePath;
             }
 
             $userId = auth()->id();
 
-            // Buat daycare baru
             $daycare = Daycare::create($request->only(['name', 'description', 'opening_hours', 'closing_hours', 'opening_days', 'phone_number', 'location', 'longitude', 'latitude', 'location_tracking', 'price', 'is_disability', 'address', 'price_half', 'price_full', 'bank_account', 'bank_account_number', 'bank_account_name']) + ['images' => $imageUrl, 'user_id' => $userId]);
 
-
-            // Simpan gambar fasilitas
             foreach ($request->facility_images as $facilityImage) {
                 if ($facilityImage) {
-                    $facilityImageName = time() . '_' . $facilityImage->getClientOriginalName(); // Buat nama file unik
-                    $facilityImagePath = $facilityImage->storeAs('daycare/facility', $facilityImageName, 'public'); // Menyimpan ke storage/app/public/daycare/facility
-                    $facilityImageUrl = 'public/' . $facilityImagePath; // Membuat URL untuk diakses
+                    $facilityImageName = time() . '_' . $facilityImage->getClientOriginalName(); 
+                    $facilityImagePath = $facilityImage->storeAs('daycare/facility', $facilityImageName, 'public');
+                    $facilityImageUrl = 'public/' . $facilityImagePath;
 
                     FacilityDaycareImage::create([
                         'daycare_id' => $daycare->id,
-                        'image_url' => $facilityImageUrl, // Menyimpan URL gambar fasilitas
+                        'image_url' => $facilityImageUrl, 
                     ]);
                 }
+            }
+
+            foreach ($request->price_lists as $priceList) {
+                DaycarePriceList::create([
+                    'daycare_id' => $daycare->id,
+                    'age_start' => $priceList['age_start'],
+                    'age_end' => $priceList['age_end'],
+                    'price' => $priceList['price'],
+                ]);
             }
 
             return response()->json(

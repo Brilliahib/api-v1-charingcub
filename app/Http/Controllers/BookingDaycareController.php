@@ -8,11 +8,17 @@ use Illuminate\Support\Facades\Auth;
 
 class BookingDaycareController extends Controller
 {
-    // Book a daycare
+    public function __construct()
+    {
+        Xendit::setApiKey(env('XENDIT_API_KEY'));
+    }
+    
     public function bookDaycare(Request $request)
     {
+        // Validasi input
         $request->validate([
             'daycare_id' => 'required|exists:daycares,id',
+            'daycare_price_list_id' => 'required|exists:daycare_price_lists,id',
             'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',
             'name_babies' => 'required|string',
@@ -22,20 +28,24 @@ class BookingDaycareController extends Controller
 
         $userId = auth()->id();
 
+        // Membuat booking daycare baru
         $booking = BookingDaycare::create([
             'user_id' => $userId,
             'daycare_id' => $request->daycare_id,
+            'daycare_price_list_id' => $request->daycare_price_list_id,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
             'name_babies' => $request->name_babies,
             'age_babies' => $request->age_babies,
             'special_request' => $request->special_request,
+            'payment_status' => 'pending', // Status pembayaran sementara
+            'payment_method' => null, // Pembayaran belum dipilih
         ]);
 
         return response()->json(
             [
                 'statusCode' => 201,
-                'message' => 'Daycare booked successfully.',
+                'message' => 'Booking daycare created successfully.',
                 'data' => $booking,
             ],
             201,
@@ -46,7 +56,7 @@ class BookingDaycareController extends Controller
     public function approveBooking($id)
     {
         $booking = BookingDaycare::findOrFail($id);
-        $booking->is_approved = true;
+        $booking->is_approved = 1;
         $booking->save();
 
         return response()->json(
@@ -93,7 +103,7 @@ class BookingDaycareController extends Controller
     public function paidConfirmationBooking($id)
     {
         $booking = BookingDaycare::findOrFail($id);
-        $booking->is_paid = true;
+        $booking->is_paid = 1;
         $booking->save();
 
         return response()->json(

@@ -31,4 +31,9 @@ class Daycare extends BaseModel
     public function user(){
         return $this->belongsTo(User::class);
     }
+
+    public function priceLists()
+{
+    return $this->hasMany(DaycarePriceList::class);
+}
 }

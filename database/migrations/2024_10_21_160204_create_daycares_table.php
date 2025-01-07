@@ -20,8 +20,6 @@ return new class extends Migration
             $table->time('opening_hours');
             $table->time('closing_hours');
             $table->string('opening_days');
-            $table->integer('price_half');
-            $table->integer('price_full'); 
             $table->string('phone_number')->nullable();
             $table->decimal('rating', 2, 1)->default(0);
             $table->integer('reviewers_count')->default(0);
