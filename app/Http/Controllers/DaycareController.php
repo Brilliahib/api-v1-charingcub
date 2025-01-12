@@ -19,7 +19,7 @@ class DaycareController extends Controller
     // Menampilkan semua daycare
     public function index(Request $request)
     {
-        $query = Daycare::with('facilityImages', 'nannies');
+        $query = Daycare::with('facilityImages', 'nannies', 'priceLists');
 
         // Memeriksa apakah ada parameter 'location' dalam query string
         if ($request->has('location')) {
@@ -75,8 +75,6 @@ class DaycareController extends Controller
                 'longitude' => 'nullable|numeric',
                 'latitude' => 'nullable|numeric',
                 'location_tracking' => 'required|string',
-                'price_half' => 'required|integer',
-                'price_full' => 'required|integer',
                 'is_disability' => 'required|boolean',
                 'bank_account' => 'required|string',
                 'bank_account_number' => 'required|string',

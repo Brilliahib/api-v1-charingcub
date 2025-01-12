@@ -50,6 +50,11 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/chat-room', [ChatRoomController::class, 'createChatRoom']);
     Route::get('/chat-room/{chatRoomId}/messages', [MessageController::class, 'getMessages']);
     Route::post('/chat-room/{chatRoomId}/messages', [MessageController::class, 'sendMessage']);
+    
+    Route::post('/daycare/payment/ovo/{id}', [BookingDaycareController::class, 'payWithOvo']);
+    Route::get('/daycare/payment/qris/{id}', [BookingDaycareController::class, 'payWithQris']);
+    Route::get('/daycare/payment/dana/{id}', [BookingDaycareController::class, 'payWithDana']);
+    Route::get('/daycare/payment/shopeepay/{id}', [BookingDaycareController::class, 'payWithShopeePay']);
 
     Route::middleware('role:admin')->group(function () {
         Route::prefix('user')->group(function () {

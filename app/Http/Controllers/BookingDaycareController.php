@@ -3,70 +3,177 @@
 namespace App\Http\Controllers;
 
 use App\Models\BookingDaycare;
+use App\Models\DaycarePriceList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Midtrans\Config;
+use Midtrans\CoreApi;
 
 class BookingDaycareController extends Controller
 {
     public function __construct()
     {
-        Xendit::setApiKey(env('XENDIT_API_KEY'));
+        Config::$serverKey = config('midtrans.server_key');
+        Config::$isProduction = config('midtrans.is_production');
+        Config::$isSanitized = true;
+        Config::$is3ds = true;
     }
-    
+
     public function bookDaycare(Request $request)
     {
-        // Validasi input
         $request->validate([
             'daycare_id' => 'required|exists:daycares,id',
-            'daycare_price_list_id' => 'required|exists:daycare_price_lists,id',
             'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',
             'name_babies' => 'required|string',
             'age_babies' => 'required',
             'special_request' => 'nullable|string',
+            'price' => 'required',
         ]);
 
         $userId = auth()->id();
 
-        // Membuat booking daycare baru
         $booking = BookingDaycare::create([
             'user_id' => $userId,
             'daycare_id' => $request->daycare_id,
-            'daycare_price_list_id' => $request->daycare_price_list_id,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
             'name_babies' => $request->name_babies,
             'age_babies' => $request->age_babies,
             'special_request' => $request->special_request,
-            'payment_status' => 'pending', // Status pembayaran sementara
-            'payment_method' => null, // Pembayaran belum dipilih
+            'price' => $request->price,
         ]);
 
         return response()->json(
             [
                 'statusCode' => 201,
-                'message' => 'Booking daycare created successfully.',
+                'message' => 'Daycare booked successfully.',
                 'data' => $booking,
             ],
             201,
         );
     }
 
-    // Approve a daycare booking (Admin or Daycare Staff)
-    public function approveBooking($id)
+    public function payWithOvo(Request $request, $id)
+    {
+        $request->validate([
+            'ovo_number' => 'required|numeric',
+        ]);
+
+        $booking = BookingDaycare::findOrFail($id);
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => 'OVO-' . $booking->id,
+                'gross_amount' => $booking->price,
+            ],
+            'payment_type' => 'gopay',
+            'gopay' => [
+                'enable_callback' => false,
+                'callback_url' => 'https://your-callback-url.com',
+            ],
+            'customer_details' => [
+                'first_name' => $booking->user->name,
+                'email' => $booking->user->email,
+                'phone' => $request->ovo_number,
+            ],
+        ];
+
+        $response = CoreApi::charge($params);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Payment request created successfully',
+            'data' => $response,
+        ]);
+    }
+
+    // Generate Payment for QRIS
+    public function payWithQris($id)
     {
         $booking = BookingDaycare::findOrFail($id);
-        $booking->is_approved = 1;
-        $booking->save();
 
-        return response()->json(
-            [
-                'statusCode' => 200,
-                'message' => 'Booking approved successfully.',
-                'data' => $booking,
+        $params = [
+            'transaction_details' => [
+                'order_id' => 'QRIS-' . $booking->id,
+                'gross_amount' => $booking->price,
             ],
-            200,
-        );
+            'payment_type' => 'gopay',
+            'gopay' => [
+                'enable_callback' => false,
+                'callback_url' => 'https://your-callback-url.com',
+            ],
+        ];
+
+        $response = CoreApi::charge($params);
+
+        $qrCodeString = '';
+        if (isset($response->actions)) {
+            foreach ($response->actions as $action) {
+                if ($action->name === 'generate-qr-code') {
+                    $qrCodeString = $action->url;
+                    break;
+                }
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'QRIS payment link generated successfully',
+            'qr_code_string' => $qrCodeString,
+            'data' => $response,
+        ]);
+    }
+
+    // Generate Payment for Dana
+    public function payWithDana($id)
+    {
+        $booking = BookingDaycare::findOrFail($id);
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => 'DANA-' . $booking->id,
+                'gross_amount' => $booking->price,
+            ],
+            'payment_type' => 'echannel', 
+            'echannel' => [
+            'bill_info' => 'Booking Daycare', 
+            'bill_key' => 'BOOK-' . $booking->id,      
+        ],
+        ];
+
+        $response = CoreApi::charge($params);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Dana payment created successfully',
+            'data' => $response,
+        ]);
+    }
+
+    // Generate Payment for ShopeePay
+    public function payWithShopeePay($id)
+    {
+        $booking = BookingDaycare::findOrFail($id);
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => 'SHOPEEPAY-' . $booking->id,
+                'gross_amount' => $booking->price,
+            ],
+            'payment_type' => 'shopeepay',
+            'shopeepay' => [
+                'callback_url' => 'https://your-callback-url.com',
+            ],
+        ];
+
+        $response = CoreApi::charge($params);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'ShopeePay payment created successfully',
+            'data' => $response,
+        ]);
     }
 
     // Upload payment proof for daycare booking
@@ -99,27 +206,10 @@ class BookingDaycareController extends Controller
         );
     }
 
-    // Confirm payment for daycare booking
-    public function paidConfirmationBooking($id)
-    {
-        $booking = BookingDaycare::findOrFail($id);
-        $booking->is_paid = 1;
-        $booking->save();
-
-        return response()->json(
-            [
-                'statusCode' => 200,
-                'message' => 'Booking payment confirmed successfully.',
-                'data' => $booking,
-            ],
-            200,
-        );
-    }
-
     // List user bookings
     public function listUserBookings()
     {
-        $bookings = Auth::user()->bookingDaycares()->with('daycares')->get();
+        $bookings = Auth::user()->bookingDaycares()->with('daycares', 'daycares.priceLists')->get();
 
         return response()->json(
             [

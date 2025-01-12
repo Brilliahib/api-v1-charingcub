@@ -40,6 +40,7 @@ class ArticleController extends Controller
                     'id' => $article->id,
                     'title' => $article->title,
                     'content' => $article->content,
+                    'slug'=> $article->slug,
                     'image' => $data['image'], // Menggunakan $data['image'] yang sudah diperbarui
                     'created_at' => $article->created_at,
                     'updated_at' => $article->updated_at,
