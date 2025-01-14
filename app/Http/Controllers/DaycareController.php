@@ -49,7 +49,7 @@ class DaycareController extends Controller
     // Menampilkan daycare berdasarkan ID
     public function show($id)
     {
-        $daycare = Daycare::with('facilityImages', 'nannies.user', 'reviews.user')->findOrFail($id);
+        $daycare = Daycare::with('facilityImages', 'nannies.user', 'reviews.user', 'priceLists')->findOrFail($id);
         return response()->json([
             'statusCode' => 200,
             'message' => 'Successfully retrieved daycare',

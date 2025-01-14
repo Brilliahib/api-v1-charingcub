@@ -55,6 +55,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/daycare/payment/qris/{id}', [BookingDaycareController::class, 'payWithQris']);
     Route::get('/daycare/payment/dana/{id}', [BookingDaycareController::class, 'payWithDana']);
     Route::get('/daycare/payment/shopeepay/{id}', [BookingDaycareController::class, 'payWithShopeePay']);
+    Route::get('/daycare/payment/check/{id}', [BookingDaycareController::class, 'checkPayment']);
 
     Route::middleware('role:admin')->group(function () {
         Route::prefix('user')->group(function () {
