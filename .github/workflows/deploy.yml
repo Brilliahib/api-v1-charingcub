@@ -1,4 +1,4 @@
-name: Deploy to Hostinger
+name: Deploy Laravel to Hostinger
 
 on:
   push:
@@ -13,11 +13,20 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Deploy to Hostinger via FTP
+      - name: Deploy Laravel Files
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./
+          server-dir: /charingcub/
+
+      - name: Deploy Public Folder to public_html
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./public/
           server-dir: /public_html/
