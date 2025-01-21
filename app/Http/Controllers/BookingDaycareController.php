@@ -3,13 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\BookingDaycare;
-use App\Models\DaycarePriceList;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Midtrans\Config;
-use Midtrans\CoreApi;
-use Midtrans\Transaction;
 
 class BookingDaycareController extends Controller
 {
@@ -25,12 +21,12 @@ class BookingDaycareController extends Controller
     {
         $request->validate([
             'daycare_id' => 'required|exists:daycares,id',
+            'price_id' => 'required|exists:priceLists,id',
             'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',
             'name_babies' => 'required|string',
             'age_babies' => 'required',
             'special_request' => 'nullable|string',
-            'price' => 'required',
         ]);
 
         $userId = auth()->id();
@@ -38,197 +34,84 @@ class BookingDaycareController extends Controller
         $booking = BookingDaycare::create([
             'user_id' => $userId,
             'daycare_id' => $request->daycare_id,
+            'price_id' => $request->price_id,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
             'name_babies' => $request->name_babies,
             'age_babies' => $request->age_babies,
             'special_request' => $request->special_request,
-            'price' => $request->price,
             'payment_status' => 'pending',
         ]);
 
-        return response()->json(
+        $orderId = 'booking-' . $booking->id;
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => $orderId,
+                'gross_amount' => $booking->priceLists->price,
+            ],
+            'customer_details' => [
+                'first_name' => Auth::user()->name,
+                'email' => Auth::user()->email,
+            ],
+            'item_details' => [
             [
-                'statusCode' => 201,
-                'message' => 'Daycare booked successfully.',
-                'data' => $booking,
-            ],
-            201,
-        );
-    }
-
-    public function payWithOvo(Request $request, $id)
-    {
-        $request->validate([
-            'ovo_number' => 'required|numeric',
-        ]);
-
-        $booking = BookingDaycare::findOrFail($id);
-
-        $timestamp = Carbon::now()->format('His');
-        $orderId = 'ovo-' . $booking->id . '-' . $timestamp;
-
-        $params = [
-            'transaction_details' => [
-                'order_id' => $orderId,
-                'gross_amount' => $booking->price,
-            ],
-            'payment_type' => 'gopay',
-            'gopay' => [
-                'enable_callback' => false,
-                'callback_url' => 'https://your-callback-url.com',
-            ],
-            'customer_details' => [
-                'first_name' => $booking->user->name,
-                'email' => $booking->user->email,
-                'phone' => $request->ovo_number,
-            ],
+                'id' => $booking->id,
+                'price' => $booking->priceLists->price,
+                'quantity' => 1,
+                'name' => 'Daycare Booking: ' . $booking->id,
+            ]
+        ]
         ];
-
-        $response = CoreApi::charge($params);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Payment request created successfully',
-            'data' => $response,
-        ]);
-    }
-
-    public function payWithQris($id)
-    {
-        $booking = BookingDaycare::findOrFail($id);
 
         try {
-            $transactionStatus = \Midtrans\Transaction::status($id);
-        
-            if ($transactionStatus->transaction_status === 'pending') {
-                // Jika pending, berikan link pembayaran lama
-                return response()->json([
-                    'message' => 'Transaksi sudah ada dan masih pending.',
-                    'payment_url' => $transactionStatus->payment_url,
-                ]);
-            }
-        
-            // Jika statusnya bukan pending, buat transaksi baru
-            $transactionDetails = [
-                'transaction_details' => [
-                    'order_id' => $id, // Pastikan unik!
-                    'gross_amount' => 100000,
-                ],
-                'customer_details' => [
-                    'first_name' => 'John',
-                    'email' => 'john@example.com',
-                    'phone' => '08123456789',
-                ],
-            ];
-        
-            $newTransaction = \Midtrans\Snap::createTransaction($transactionDetails);
-        
-            return response()->json($newTransaction);
-        } catch (Exception $e) {
-            \Log::error('Midtrans Error: ' . $e->getMessage());
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-        
-    }
-
-    // Generate Payment for Dana
-    public function payWithDana($id)
-    {
-        $booking = BookingDaycare::findOrFail($id);
-
-        $timestamp = Carbon::now()->format('His');
-        $orderId = 'dana-' . $booking->id . '-' . $timestamp;
-
-        $params = [
-            'transaction_details' => [
-                'order_id' => $orderId,
-                'gross_amount' => $booking->price,
-            ],
-            'payment_type' => 'echannel',
-            'echannel' => [
-                'bill_info' => 'Booking Daycare',
-                'bill_key' => 'BOOK-' . $booking->id,
-            ],
-        ];
-
-        $response = CoreApi::charge($params);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Dana payment created successfully',
-            'data' => $response,
-        ]);
-    }
-
-    // Generate Payment for ShopeePay
-    public function payWithShopeePay($id)
-    {
-        $booking = BookingDaycare::findOrFail($id);
-
-        $timestamp = Carbon::now()->format('His');
-        $orderId = 'spay-' . $booking->id . '-' . $timestamp;
-
-        $params = [
-            'transaction_details' => [
-                'order_id' => $orderId,
-                'gross_amount' => $booking->price,
-            ],
-            'payment_type' => 'shopeepay',
-            'shopeepay' => [
-                'callback_url' => 'https://your-callback-url.com',
-            ],
-            'customer_details' => [
-                'first_name' => $booking->user->name,
-                'email' => $booking->user->email,
-            ],
-        ];
-
-        $response = CoreApi::charge($params);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'ShopeePay payment created successfully',
-            'data' => $response,
-        ]);
-    }
-
-    public function checkPayment(Request $request, $id)
-    {
-        $booking = BookingDaycare::findOrFail($id);
-
-        try {
-            $transactionStatus = Transaction::status($booking->id);
-            if ($transactionStatus->transaction_status === 'settlement') {
-                $booking->payment_method = $transactionStatus->payment_type;
-                $booking->payment_status = 'paid';
-                $booking->save();
-            } elseif ($transactionStatus->transaction_status === 'pending') {
-                $booking->payment_status = 'pending';
-                $booking->save();
-            } elseif ($transactionStatus->transaction_status === 'cancel') {
-                $booking->payment_status = 'cancelled';
-                $booking->save();
-            }
+            $snapResponse = \Midtrans\Snap::createTransaction($params);
 
             return response()->json(
                 [
-                    'statusCode' => 200,
-                    'message' => 'Payment status retrieved successfully.',
-                    'data' => $transactionStatus,
+                    'statusCode' => 201,
+                    'message' => 'Daycare booked successfully. Payment URL generated.',
+                    'data' => [
+                        'booking' => $booking,
+                        'payment_url' => $snapResponse->redirect_url,
+                    ],
                 ],
-                200,
+                201,
             );
         } catch (\Exception $e) {
             return response()->json(
                 [
                     'statusCode' => 500,
-                    'message' => 'Failed to retrieve payment status.',
+                    'message' => 'Failed to create payment transaction.',
                     'error' => $e->getMessage(),
                 ],
                 500,
             );
         }
+    }
+
+    public function handleMidtransNotification(Request $request)
+    {
+        $notif = new \Midtrans\Notification();
+
+        $transactionStatus = $notif->transaction_status;
+        $orderId = explode('-', $notif->order_id)[1];
+        $paymentType = $notif->payment_type;
+
+        $booking = BookingDaycare::findOrFail($orderId);
+
+        if ($transactionStatus == 'settlement') {
+            $booking->payment_status = 'paid';
+        } elseif ($transactionStatus == 'pending') {
+            $booking->payment_status = 'pending';
+        } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
+            $booking->payment_status = 'cancelled';
+        }
+
+        $booking->payment_method = $paymentType;
+        $booking->save();
+
+        return response()->json(['message' => 'Notification processed successfully.'], 200);
     }
 
     // Upload payment proof for daycare booking

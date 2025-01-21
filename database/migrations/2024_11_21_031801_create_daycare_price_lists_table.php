@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('daycare_id'); 
             $table->string('age_start'); 
             $table->string('age_end');
+            $table->string('name');
             $table->integer('price'); 
             $table->timestamps();
 

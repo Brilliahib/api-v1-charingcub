@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('user_id');
             $table->uuid('daycare_id');
+            $table->uuid('price_id');
             $table->string('name_babies');
             $table->integer('age_babies');
             $table->text('special_request')->nullable();
@@ -28,6 +29,7 @@ return new class extends Migration
 
             $table->foreign('daycare_id')->references('id')->on('daycares')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('price_id')->references('id')->on('daycare_price_lists')->onDelete('cascade');
         });
     }
 

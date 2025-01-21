@@ -82,6 +82,7 @@ class DaycareController extends Controller
                 'price_lists' => 'required|array', 
                 'price_lists.*.age_start' => 'required|string', 
                 'price_lists.*.age_end' => 'required|string', 
+                'price_lists.*.name' => 'required|string', 
                 'price_lists.*.price' => 'required|integer', 
             ]);
 
@@ -115,6 +116,7 @@ class DaycareController extends Controller
                     'daycare_id' => $daycare->id,
                     'age_start' => $priceList['age_start'],
                     'age_end' => $priceList['age_end'],
+                    'name' => $priceList['name'],
                     'price' => $priceList['price'],
                 ]);
             }
