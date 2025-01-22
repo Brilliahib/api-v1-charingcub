@@ -26,15 +26,25 @@ class ArticleTypeController extends Controller
     }
 
     // Get all article types
-    public function getAllArticleType(): JsonResponse
+    public function getAllArticleType(Request $request): JsonResponse
     {
-        $articleTypes = ArticleType::all();
+        $name = $request->query('name', '');
+
+        $articleTypes = ArticleType::when($name, function ($query, $name) {
+            $query->where('name', 'like', '%' . $name . '%');
+        })->paginate(10);
 
         return response()->json(
             [
                 'statusCode' => 200,
                 'message' => 'Article Types retrieved successfully',
-                'data' => $articleTypes,
+                'data' => $articleTypes->items(),
+                'pagination' => [
+                    'current_page' => $articleTypes->currentPage(),
+                    'per_page' => $articleTypes->perPage(),
+                    'total' => $articleTypes->total(),
+                    'last_page' => $articleTypes->lastPage(),
+                ],
             ],
             200,
         );

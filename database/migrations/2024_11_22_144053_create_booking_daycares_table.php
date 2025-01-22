@@ -24,7 +24,6 @@ return new class extends Migration
             $table->string('payment_proof')->nullable();
             $table->string('payment_method')->nullable();
             $table->string('payment_status')->nullable();
-            $table->integer('price');
             $table->timestamps();
 
             $table->foreign('daycare_id')->references('id')->on('daycares')->onDelete('cascade');

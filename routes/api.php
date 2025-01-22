@@ -50,7 +50,6 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/chat-room', [ChatRoomController::class, 'createChatRoom']);
     Route::get('/chat-room/{chatRoomId}/messages', [MessageController::class, 'getMessages']);
     Route::post('/chat-room/{chatRoomId}/messages', [MessageController::class, 'sendMessage']);
-    Route::post('/midtrans/notification', [DaycareController::class, 'handleMidtransNotification']);
 
     Route::middleware('role:admin')->group(function () {
         Route::prefix('user')->group(function () {
@@ -138,3 +137,5 @@ Route::get('/daycares/{id}', [DaycareController::class, 'show']); // Get a singl
 
 Route::get('/nannies', [NannyController::class, 'index']); // Get all daycares
 Route::get('/nannies/{id}', [NannyController::class, 'show']); // Get a single daycare by ID
+
+Route::post('/midtrans/payment/notification', [BookingDaycareController::class, 'handleMidtransNotification']);

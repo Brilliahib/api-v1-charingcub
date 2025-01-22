@@ -4,7 +4,7 @@
 
 ## Features to be created
 
--
+-   [] Feature Searching Query: Create search query on all get data
 
 ## Bugfixing
 

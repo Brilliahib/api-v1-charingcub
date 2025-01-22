@@ -124,15 +124,33 @@ class BookingNanniesController extends Controller
         );
     }
 
-    public function listUserBookings()
+    public function listUserBookings(Request $request)
     {
-        $bookings = Auth::user()->bookingNannies()->with('nannies.user')->get();
+        $name = $request->query('name', '');
+        $nannyId = $request->query('nanny_id', '');
+
+        $bookings = Auth::user()
+            ->bookingNannies()
+            ->when($name, function ($query, $name) {
+                $query->where('name_babies', 'like', '%' . $name . '%');
+            })
+            ->when($nannyId, function ($query, $nannyId) {
+                $query->where('nanny_id', $nannyId);
+            })
+            ->with('nannies.user')
+            ->paginate(10);
 
         return response()->json(
             [
                 'statusCode' => 200,
                 'message' => 'User bookings retrieved successfully.',
-                'data' => $bookings,
+                'data' => $bookings->items(),
+                'pagination' => [
+                    'current_page' => $bookings->currentPage(),
+                    'per_page' => $bookings->perPage(),
+                    'total' => $bookings->total(),
+                    'last_page' => $bookings->lastPage(),
+                ],
             ],
             200,
         );
@@ -163,21 +181,34 @@ class BookingNanniesController extends Controller
         );
     }
 
-    public function listNannyBookings()
+    public function listNannyBookings(Request $request)
     {
         $user = Auth::user();
 
         $nannyProfile = $user->nannies;
 
+        $name = $request->query('name', '');
+
         $bookings = BookingNannies::where('nanny_id', $nannyProfile->id)
+            ->when($name, function ($query, $name) {
+                $query->where('name_babies', 'like', '%' . $name . '%')->orWhereHas('user', function ($query) use ($name) {
+                    $query->where('name', 'like', '%' . $name . '%');
+                });
+            })
             ->with('user')
-            ->get();
+            ->paginate(10);
 
         return response()->json(
             [
                 'statusCode' => 200,
                 'message' => 'Nanny bookings retrieved successfully.',
-                'data' => $bookings,
+                'data' => $bookings->items(),
+                'pagination' => [
+                    'current_page' => $bookings->currentPage(),
+                    'per_page' => $bookings->perPage(),
+                    'total' => $bookings->total(),
+                    'last_page' => $bookings->lastPage(),
+                ],
             ],
             200,
         );

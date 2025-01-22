@@ -40,7 +40,7 @@ class ArticleController extends Controller
                     'id' => $article->id,
                     'title' => $article->title,
                     'content' => $article->content,
-                    'slug'=> $article->slug,
+                    'slug' => $article->slug,
                     'image' => $data['image'], // Menggunakan $data['image'] yang sudah diperbarui
                     'created_at' => $article->created_at,
                     'updated_at' => $article->updated_at,
@@ -51,15 +51,24 @@ class ArticleController extends Controller
     }
 
     // Get all articles
-    public function getAllArticle(): JsonResponse
+    public function getAllArticle(Request $request): JsonResponse
     {
-        $articles = Article::all();
+        $title = $request->query('title', '');
+        $articles = Article::when($title, function ($query, $title) {
+            $query->where('title', 'like', '%' . $title . '%');
+        })->paginate(10);
 
         return response()->json(
             [
                 'statusCode' => 200,
                 'message' => 'Articles retrieved successfully',
-                'data' => $articles,
+                'data' => $articles->items(),
+                'pagination' => [
+                'current_page' => $articles->currentPage(),
+                'per_page' => $articles->perPage(),
+                'total' => $articles->total(),
+                'last_page' => $articles->lastPage(),
+            ],
             ],
             200,
         );
