@@ -5,14 +5,24 @@ namespace App\Http\Controllers;
 use App\Models\BookingDaycare;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Midtrans\Config;
 
 class BookingDaycareController extends Controller
 {
-    // Book a daycare
+    public function __construct()
+    {
+        Config::$serverKey = config('midtrans.server_key');
+        Config::$isProduction = config('midtrans.is_production');
+        Config::$isSanitized = true;
+        Config::$is3ds = true;
+    }
+
     public function bookDaycare(Request $request)
     {
         $request->validate([
             'daycare_id' => 'required|exists:daycares,id',
+            'price_id' => 'required|exists:daycare_price_lists,id',
             'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',
             'name_babies' => 'required|string',
@@ -25,38 +35,85 @@ class BookingDaycareController extends Controller
         $booking = BookingDaycare::create([
             'user_id' => $userId,
             'daycare_id' => $request->daycare_id,
+            'price_id' => $request->price_id,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
             'name_babies' => $request->name_babies,
             'age_babies' => $request->age_babies,
             'special_request' => $request->special_request,
+            'payment_status' => 'pending',
         ]);
 
-        return response()->json(
-            [
-                'statusCode' => 201,
-                'message' => 'Daycare booked successfully.',
-                'data' => $booking,
+        $orderId = 'booking-' . $booking->id;
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => $orderId,
+                'gross_amount' => $booking->priceLists->price,
             ],
-            201,
-        );
+            'customer_details' => [
+                'first_name' => Auth::user()->name,
+                'email' => Auth::user()->email,
+            ],
+            'item_details' => [
+                [
+                    'id' => $booking->id,
+                    'price' => $booking->priceLists->price,
+                    'quantity' => 1,
+                    'name' => 'Daycare Booking: ' . $booking->id,
+                ],
+            ],
+        ];
+
+        try {
+            $snapResponse = \Midtrans\Snap::createTransaction($params);
+
+            return response()->json(
+                [
+                    'statusCode' => 201,
+                    'message' => 'Daycare booked successfully. Payment URL generated.',
+                    'data' => [
+                        'booking' => $booking,
+                        'payment_url' => $snapResponse->redirect_url,
+                    ],
+                ],
+                201,
+            );
+        } catch (\Exception $e) {
+            Log::error('Booking Daycare Error: ' . $e->getMessage());
+            return response()->json(
+                [
+                    'statusCode' => 500,
+                    'message' => 'Failed to create payment transaction.',
+                    'error' => $e->getMessage(),
+                ],
+                500,
+            );
+        }
     }
 
-    // Approve a daycare booking (Admin or Daycare Staff)
-    public function approveBooking($id)
+    public function handleMidtransNotification(Request $request)
     {
-        $booking = BookingDaycare::findOrFail($id);
-        $booking->is_approved = true;
+        $notif = new \Midtrans\Notification();
+
+        $transactionStatus = $notif->transaction_status;
+        $orderId = substr($notif->order_id, 8);
+        $paymentType = $notif->payment_type;
+
+        $booking = BookingDaycare::findOrFail($orderId);
+
+        if ($transactionStatus == 'capture') {
+            $booking->payment_status = 'paid';
+        } elseif ($transactionStatus == 'pending') {
+            $booking->payment_status = 'pending';
+        } elseif (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
+            $booking->payment_status = 'cancelled';
+        }
+
+        $booking->payment_method = $paymentType;
         $booking->save();
 
-        return response()->json(
-            [
-                'statusCode' => 200,
-                'message' => 'Booking approved successfully.',
-                'data' => $booking,
-            ],
-            200,
-        );
+        return response()->json(['message' => 'Notification processed successfully.'], 200);
     }
 
     // Upload payment proof for daycare booking
@@ -89,33 +146,34 @@ class BookingDaycareController extends Controller
         );
     }
 
-    // Confirm payment for daycare booking
-    public function paidConfirmationBooking($id)
-    {
-        $booking = BookingDaycare::findOrFail($id);
-        $booking->is_paid = true;
-        $booking->save();
-
-        return response()->json(
-            [
-                'statusCode' => 200,
-                'message' => 'Booking payment confirmed successfully.',
-                'data' => $booking,
-            ],
-            200,
-        );
-    }
-
     // List user bookings
-    public function listUserBookings()
+    public function listUserBookings(Request $request)
     {
-        $bookings = Auth::user()->bookingDaycares()->with('daycares')->get();
+        $name = $request->query('name', '');
+        $daycareId = $request->query('daycare_id', '');
+
+        $bookings = Auth::user()
+            ->bookingDaycares()
+            ->when($name, function ($query, $name) {
+                $query->where('name_babies', 'like', '%' . $name . '%');
+            })
+            ->when($daycareId, function ($query, $daycareId) {
+                $query->where('daycare_id', $daycareId);
+            })
+            ->with('daycares', 'daycares')
+            ->paginate(10);
 
         return response()->json(
             [
                 'statusCode' => 200,
                 'message' => 'User bookings retrieved successfully.',
-                'data' => $bookings,
+                'data' => $bookings->items(),
+                'pagination' => [
+                    'current_page' => $bookings->currentPage(),
+                    'per_page' => $bookings->perPage(),
+                    'total' => $bookings->total(),
+                    'last_page' => $bookings->lastPage(),
+                ],
             ],
             200,
         );
@@ -124,7 +182,7 @@ class BookingDaycareController extends Controller
     // Get booking details for a user
     public function getUserBookingDetail($id)
     {
-        $booking = BookingDaycare::with(['user', 'daycares.user'])->findOrFail($id);
+        $booking = BookingDaycare::with(['user', 'daycares'])->findOrFail($id);
 
         return response()->json(
             [
@@ -137,21 +195,44 @@ class BookingDaycareController extends Controller
     }
 
     // List daycare bookings
-    public function listDaycareBookings()
+    public function listDaycareBookings(Request $request)
     {
         $user = Auth::user();
 
         $daycareProfile = $user->daycare;
+        if (!$daycareProfile) {
+            return response()->json(
+                [
+                    'statusCode' => 404,
+                    'message' => 'User does not have a daycare profile.',
+                    'data' => [],
+                ],
+                404,
+            );
+        }
+
+        $name = $request->query('name', '');
 
         $bookings = BookingDaycare::where('daycare_id', $daycareProfile->id)
+            ->when($name, function ($query, $name) {
+                $query->where('name_babies', 'like', '%' . $name . '%')->orWhereHas('user', function ($query) use ($name) {
+                    $query->where('name', 'like', '%' . $name . '%');
+                });
+            })
             ->with('user')
-            ->get();
+            ->paginate(10);
 
         return response()->json(
             [
                 'statusCode' => 200,
                 'message' => 'Daycare bookings retrieved successfully.',
-                'data' => $bookings,
+                'data' => $bookings->items(),
+                'pagination' => [
+                    'current_page' => $bookings->currentPage(),
+                    'per_page' => $bookings->perPage(),
+                    'total' => $bookings->total(),
+                    'last_page' => $bookings->lastPage(),
+                ],
             ],
             200,
         );

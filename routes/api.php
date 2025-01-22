@@ -137,3 +137,5 @@ Route::get('/daycares/{id}', [DaycareController::class, 'show']); // Get a singl
 
 Route::get('/nannies', [NannyController::class, 'index']); // Get all daycares
 Route::get('/nannies/{id}', [NannyController::class, 'show']); // Get a single daycare by ID
+
+Route::post('/midtrans/payment/notification', [BookingDaycareController::class, 'handleMidtransNotification']);

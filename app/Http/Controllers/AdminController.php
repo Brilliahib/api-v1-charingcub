@@ -57,14 +57,24 @@ class AdminController extends Controller
         ], 201);
     }
 
-    public function getAllUsers(): JsonResponse
+    public function getAllUsers(Request $request): JsonResponse
     {
-        $users = User::all(); 
+        $name = $request->query('name', '');
+
+        $users = User::when($name, function ($query, $name) {
+            $query->where('name', 'like', '%' . $name . '%');
+        })->paginate(10);
 
         return response()->json([
             'statusCode' => 200,
             'message' => 'All users retrieved successfully',
-            'data' => $users,
+            'data' => $users->items(),
+            'pagination' => [
+                'current_page' => $users->currentPage(),
+                'per_page' => $users->perPage(),
+                'total' => $users->total(),
+                'last_page' => $users->lastPage(),
+            ],
         ], 200);
     }
 

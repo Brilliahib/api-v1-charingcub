@@ -11,7 +11,7 @@ class Daycare extends BaseModel
     protected $casts = [
         'longitude' => 'float',
         'latitude' => 'float',
-    ];    
+    ];
 
     public function reviews()
     {
@@ -28,7 +28,13 @@ class Daycare extends BaseModel
         return $this->hasMany(FacilityDaycareImage::class);
     }
 
-    public function user(){
+    public function user()
+    {
         return $this->belongsTo(User::class);
+    }
+
+    public function priceLists()
+    {
+        return $this->hasMany(DaycarePriceList::class);
     }
 }
