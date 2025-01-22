@@ -46,7 +46,7 @@ class NannyController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'daycare_id' => 'required|integer',
+            'daycare_id' => 'required|string',
             'images' => 'required|image|mimes:jpg,jpeg,png|max:2048', // Validasi untuk gambar
             'gender' => 'required|string|max:10',
             'age' => 'required|integer|min:18',
