@@ -11,29 +11,49 @@ use App\Models\User;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class DaycareController extends Controller
 {
-    // Menampilkan semua daycare
     public function index(Request $request)
-    {
-        $query = Daycare::with('facilityImages', 'nannies', 'priceLists');
+{
+    $latitude = $request->input('latitude');
+    $longitude = $request->input('longitude');
+    $query = Daycare::with('facilityImages', 'nannies', 'priceLists'); // Tetap menggunakan with untuk relasi
 
-        // Memeriksa apakah ada parameter 'location' dalam query string
-        if ($request->has('location')) {
-            $query->where('location', 'like', '%' . $request->input('location') . '%');
-        }
-
-        $daycares = $query->get();
-
-        return response()->json([
-            'statusCode' => 200,
-            'message' => 'Successfully retrieved daycares',
-            'data' => $daycares,
-        ]);
+    // Filter berdasarkan lokasi jika ada parameter 'location'
+    if ($request->has('location')) {
+        $query->where('location', 'like', '%' . $request->input('location') . '%');
     }
+
+    // Perhitungan jarak jika latitude dan longitude diberikan dalam request
+    if ($latitude && $longitude) {
+        $query
+            ->selectRaw(
+                "daycares.*,
+                ROUND(
+                    (6371 * acos(
+                        cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?))
+                        + sin(radians(?)) * sin(radians(latitude))
+                    )), 2
+                ) AS distance",
+                [$latitude, $longitude, $latitude] // Sisipkan parameter di sini
+            )
+            ->orderBy('distance', 'asc'); // Urutkan berdasarkan jarak terdekat
+    } else {
+        $query->select('daycares.*'); // Pastikan tetap memilih semua kolom jika tidak ada latitude/longitude
+    }
+
+    $daycares = $query->get();
+
+    return response()->json([
+        'statusCode' => 200,
+        'message' => 'Successfully retrieved daycares',
+        'data' => $daycares,
+    ]);
+}
 
     public function getAllWithDisability()
     {
@@ -79,18 +99,18 @@ class DaycareController extends Controller
                 'bank_account' => 'required|string',
                 'bank_account_number' => 'required|string',
                 'bank_account_name' => 'required|string',
-                'price_lists' => 'required|array', 
-                'price_lists.*.age_start' => 'required|string', 
-                'price_lists.*.age_end' => 'required|string', 
-                'price_lists.*.name' => 'required|string', 
-                'price_lists.*.price' => 'required|integer', 
+                'price_lists' => 'required|array',
+                'price_lists.*.age_start' => 'required|string',
+                'price_lists.*.age_end' => 'required|string',
+                'price_lists.*.name' => 'required|string',
+                'price_lists.*.price' => 'required|integer',
             ]);
 
             Log::info('Request validated:', $request->all());
 
             if ($request->hasFile('images')) {
                 $imageName = time() . '_' . $request->file('images')->getClientOriginalName();
-                $imagePath = $request->file('images')->storeAs('daycare', $imageName, 'public'); 
+                $imagePath = $request->file('images')->storeAs('daycare', $imageName, 'public');
                 $imageUrl = 'public/' . $imagePath;
             }
 
@@ -100,13 +120,13 @@ class DaycareController extends Controller
 
             foreach ($request->facility_images as $facilityImage) {
                 if ($facilityImage) {
-                    $facilityImageName = time() . '_' . $facilityImage->getClientOriginalName(); 
+                    $facilityImageName = time() . '_' . $facilityImage->getClientOriginalName();
                     $facilityImagePath = $facilityImage->storeAs('daycare/facility', $facilityImageName, 'public');
                     $facilityImageUrl = 'public/' . $facilityImagePath;
 
                     FacilityDaycareImage::create([
                         'daycare_id' => $daycare->id,
-                        'image_url' => $facilityImageUrl, 
+                        'image_url' => $facilityImageUrl,
                     ]);
                 }
             }
