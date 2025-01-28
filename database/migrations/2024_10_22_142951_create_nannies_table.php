@@ -14,13 +14,11 @@ return new class extends Migration
         Schema::create('nannies', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
-            $table->uuid('daycare_id');
+            $table->uuid('daycare_id')->nullable();
             $table->string('images');
             $table->string('gender');
             $table->integer('age');
             $table->string('contact');
-            $table->integer('price_half');
-            $table->integer('price_full');
             $table->text('experience_description');
             $table->timestamps();
 

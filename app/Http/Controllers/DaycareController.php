@@ -18,42 +18,42 @@ use Illuminate\Support\Facades\Log;
 class DaycareController extends Controller
 {
     public function index(Request $request)
-{
-    $latitude = $request->input('latitude');
-    $longitude = $request->input('longitude');
-    $query = Daycare::with('facilityImages', 'nannies', 'priceLists'); // Tetap menggunakan with untuk relasi
+    {
+        $latitude = $request->input('latitude');
+        $longitude = $request->input('longitude');
+        $query = Daycare::with('facilityImages', 'nannies', 'priceLists'); // Tetap menggunakan with untuk relasi
 
-    // Filter berdasarkan lokasi jika ada parameter 'location'
-    if ($request->has('location')) {
-        $query->where('location', 'like', '%' . $request->input('location') . '%');
-    }
+        // Filter berdasarkan lokasi jika ada parameter 'location'
+        if ($request->has('location')) {
+            $query->where('location', 'like', '%' . $request->input('location') . '%');
+        }
 
-    // Perhitungan jarak jika latitude dan longitude diberikan dalam request
-    if ($latitude && $longitude) {
-        $query
-            ->selectRaw(
-                "daycares.*,
+        // Perhitungan jarak jika latitude dan longitude diberikan dalam request
+        if ($latitude && $longitude) {
+            $query
+                ->selectRaw(
+                    "daycares.*,
                 ROUND(
                     (6371 * acos(
                         cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?))
                         + sin(radians(?)) * sin(radians(latitude))
                     )), 2
                 ) AS distance",
-                [$latitude, $longitude, $latitude] // Sisipkan parameter di sini
-            )
-            ->orderBy('distance', 'asc'); // Urutkan berdasarkan jarak terdekat
-    } else {
-        $query->select('daycares.*'); // Pastikan tetap memilih semua kolom jika tidak ada latitude/longitude
+                    [$latitude, $longitude, $latitude], // Sisipkan parameter di sini
+                )
+                ->orderBy('distance', 'asc'); // Urutkan berdasarkan jarak terdekat
+        } else {
+            $query->select('daycares.*'); // Pastikan tetap memilih semua kolom jika tidak ada latitude/longitude
+        }
+
+        $daycares = $query->get();
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Successfully retrieved daycares',
+            'data' => $daycares,
+        ]);
     }
-
-    $daycares = $query->get();
-
-    return response()->json([
-        'statusCode' => 200,
-        'message' => 'Successfully retrieved daycares',
-        'data' => $daycares,
-    ]);
-}
 
     public function getAllWithDisability()
     {

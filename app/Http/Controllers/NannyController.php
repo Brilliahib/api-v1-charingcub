@@ -9,34 +9,35 @@ class NannyController extends Controller
 {
     public function index()
     {
-        $nannies = Nanny::with('user', 'daycare')->get();
+        $nannies = Nanny::with('user', 'daycare', 'daycare.priceLists')->get();
 
-        $nanniesData = $nannies->map(function ($nanny) {
+        $nannies = $nannies->map(function ($nanny) {
+            if ($nanny->daycare && $nanny->daycare->priceLists) {
+                $priceHalf = $nanny->daycare->priceLists->price_half ?? $nanny->price_half;
+                $priceFull = $nanny->daycare->priceLists->price_full ?? $nanny->price_full;
+            } else {
+                $priceHalf = $nanny->price_half;
+                $priceFull = $nanny->price_full;
+            }
+    
             return [
                 'id' => $nanny->id,
-                'name' => $nanny->user->name,
-                'daycare_id' => $nanny->daycare->id,
-                'daycare_name' => $nanny->daycare->name,
-                'daycare_profile' => $nanny->daycare->images,
-                'daycare_location' => $nanny->daycare->location,
-                'rating' => $nanny->daycare->rating,
-                'rating_count' => $nanny->daycare->reviewers_count,
+                'user' => $nanny->user,
+                'daycare' => $nanny->daycare,
                 'images' => $nanny->images,
                 'gender' => $nanny->gender,
                 'age' => $nanny->age,
                 'contact' => $nanny->contact,
-                'price_half' => $nanny->price_half,
-                'price_full' => $nanny->price_full,
                 'experience_description' => $nanny->experience_description,
-                'created_at' => $nanny->created_at,
-                'updated_at' => $nanny->updated_at,
+                'price_half' => $priceHalf,
+                'price_full' => $priceFull,
             ];
         });
-
+    
         return response()->json([
             'statusCode' => 200,
             'message' => 'Successfully retrieved nannies',
-            'data' => $nanniesData,
+            'data' => $nannies,
         ]);
     }
 
@@ -46,13 +47,11 @@ class NannyController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'daycare_id' => 'required|string',
+            'daycare_id' => 'nullable|string',
             'images' => 'required|image|mimes:jpg,jpeg,png|max:2048', // Validasi untuk gambar
             'gender' => 'required|string|max:10',
             'age' => 'required|integer|min:18',
             'contact' => 'required|string|max:20',
-            'price_half' => 'required|integer',
-            'price_full' => 'required|integer',
             'experience_description' => 'required|string',
         ]);
 
@@ -80,7 +79,7 @@ class NannyController extends Controller
      */
     public function show($id)
     {
-        $nanny = Nanny::with('user', 'daycare', 'daycare.reviews')->find($id);
+        $nanny = Nanny::with('user', 'daycare', 'daycare.reviews', 'daycare.priceLists')->find($id);
 
         if (!$nanny) {
             return response()->json([
