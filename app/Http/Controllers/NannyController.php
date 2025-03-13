@@ -3,36 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Nanny;
+use App\Models\NannyPriceList;
 use Illuminate\Http\Request;
 
 class NannyController extends Controller
 {
     public function index()
     {
-        $nannies = Nanny::with('user', 'daycare', 'daycare.priceLists')->get();
-
-        $nannies = $nannies->map(function ($nanny) {
-            if ($nanny->daycare && $nanny->daycare->priceLists) {
-                $priceHalf = $nanny->daycare->priceLists->price_half ?? $nanny->price_half;
-                $priceFull = $nanny->daycare->priceLists->price_full ?? $nanny->price_full;
-            } else {
-                $priceHalf = $nanny->price_half;
-                $priceFull = $nanny->price_full;
-            }
-    
-            return [
-                'id' => $nanny->id,
-                'user' => $nanny->user,
-                'daycare' => $nanny->daycare,
-                'images' => $nanny->images,
-                'gender' => $nanny->gender,
-                'age' => $nanny->age,
-                'contact' => $nanny->contact,
-                'experience_description' => $nanny->experience_description,
-                'price_half' => $priceHalf,
-                'price_full' => $priceFull,
-            ];
-        });
+        $nannies = Nanny::with('user', 'daycare', 'priceLists')->get();
     
         return response()->json([
             'statusCode' => 200,
@@ -53,6 +31,11 @@ class NannyController extends Controller
             'age' => 'required|integer|min:18',
             'contact' => 'required|string|max:20',
             'experience_description' => 'required|string',
+            'price_lists' => 'nullable|array',
+            'price_lists.*.age_start' => 'nullable|string',
+            'price_lists.*.age_end' => 'nullable|string',
+            'price_lists.*.name' => 'nullable|string',
+            'price_lists.*.price' => 'nullable|integer',
         ]);
 
         $imageUrl = null; // Variabel untuk menyimpan URL gambar
@@ -66,6 +49,18 @@ class NannyController extends Controller
 
         // Buat nanny baru dengan data yang sudah dimodifikasi
         $nanny = Nanny::create(array_merge($request->all(), ['images' => $imageUrl, 'user_id' => auth()->id()]));
+
+        if (!empty($request->price_lists) && is_array($request->price_lists)) {
+            foreach ($request->price_lists as $priceList) {
+                NannyPriceList::create([
+                    'nanny_id' => $nanny->id,
+                    'age_start' => $priceList['age_start'] ?? null,
+                    'age_end' => $priceList['age_end'] ?? null,
+                    'name' => $priceList['name'] ?? null,
+                    'price' => $priceList['price'] ?? null,
+                ]);
+            }
+        }
 
         return response()->json([
             'statusCode' => 201,

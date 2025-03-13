@@ -17,4 +17,9 @@ class BookingNannies extends BaseModel
     {
         return $this->belongsTo(Nanny::class, 'nanny_id');
     }
+
+    public function priceLists()
+    {
+        return $this->belongsTo(NannyPriceList::class, 'price_id');
+    }
 }

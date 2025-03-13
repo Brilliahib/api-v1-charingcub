@@ -22,4 +22,9 @@ class Nanny extends BaseModel
     {
         return $this->hasMany(BookingNannies::class);
     }
+
+    public function priceLists()
+    {
+        return $this->hasMany(NannyPriceList::class);
+    }
 }
