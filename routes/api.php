@@ -10,6 +10,7 @@ use App\Http\Controllers\ChatRoomController;
 use App\Http\Controllers\DaycareController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NannyController;
+use App\Http\Controllers\TalkController;
 use App\Models\BookingDaycare;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/auth/update-account', [AuthController::class, 'updateAccount']);
     Route::post('/daycares/review', [DaycareController::class, 'reviewDaycare']);
 
+    Route::post('/talk', [TalkController::class, 'store']);
+
     Route::get('/nannies', [BookingNanniesController::class, 'listNannies']);
     Route::post('/nannies/booking', [BookingNanniesController::class, 'bookNanny']);
     Route::post('/nannies/booking/{id}/payment', [BookingNanniesController::class, 'uploadPaymentProof']);
@@ -45,11 +48,6 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/daycares/booking/{id}/payment', [BookingDaycareController::class, 'uploadPaymentProof']);
     Route::get('/users/daycares/booking/list', [BookingDaycareController::class, 'listUserBookings']);
     Route::get('/users/daycares/booking/{id}', [BookingDaycareController::class, 'getUserBookingDetail']);
-
-    Route::get('/chat-room', [ChatRoomController::class, 'getAllChatRooms']);
-    Route::post('/chat-room', [ChatRoomController::class, 'createChatRoom']);
-    Route::get('/chat-room/{chatRoomId}/messages', [MessageController::class, 'getMessages']);
-    Route::post('/chat-room/{chatRoomId}/messages', [MessageController::class, 'sendMessage']);
 
     Route::middleware('role:admin')->group(function () {
         Route::prefix('user')->group(function () {
@@ -121,6 +119,12 @@ Route::middleware('auth:api')->group(function () {
             Route::get('/booking/list', [BookingNanniesController::class, 'listNannyBookings']);
         });
     });
+
+    Route::middleware('role:psychiatrist')->group(function () {
+        Route::prefix('talk')->group(function () {
+            Route::post('/answer/question', [TalkController::class, 'createTalkAnswer']); // Create a answer talk
+        });
+    });
 });
 
 // Route for not auth
@@ -137,5 +141,8 @@ Route::get('/daycares/{id}', [DaycareController::class, 'show']); // Get a singl
 
 Route::get('/nannies', [NannyController::class, 'index']); // Get all daycares
 Route::get('/nannies/{id}', [NannyController::class, 'show']); // Get a single daycare by ID
+
+Route::get('/talk', [TalkController::class, 'index']);  // Get all talk
+Route::get('/talk/{id}', [TalkController::class, 'show']);  // Get all talk
 
 Route::post('/midtrans/payment/notification', [BookingDaycareController::class, 'handleMidtransNotification']);

@@ -74,7 +74,7 @@ class NannyController extends Controller
      */
     public function show($id)
     {
-        $nanny = Nanny::with('user', 'daycare', 'daycare.reviews', 'daycare.priceLists')->find($id);
+        $nanny = Nanny::with('user', 'daycare', 'priceLists')->find($id);
 
         if (!$nanny) {
             return response()->json([
@@ -83,46 +83,10 @@ class NannyController extends Controller
             ]);
         }
 
-        $reviews = $nanny->daycare->reviews->map(function ($review) {
-            return [
-                'id' => $review->id,
-                'name' => $review->user->name,
-                'rating' => $review->rating,
-                'comment' => $review->comment,
-                'created_at' => $review->created_at,
-            ];
-        });
-
-        $nannyData = [
-            'id' => $nanny->id,
-            'name' => $nanny->user->name,
-            'rating' => $nanny->daycare->rating,
-            'rating_count' => $nanny->daycare->reviewers_count,
-            'images' => $nanny->images,
-            'gender' => $nanny->gender,
-            'age' => $nanny->age,
-            'contact' => $nanny->contact,
-            'price_half' => $nanny->price_half,
-            'price_full' => $nanny->price_full,
-            'experience_description' => $nanny->experience_description,
-            'daycare_id' => $nanny->daycare->id,
-            'daycare_name' => $nanny->daycare->name,
-            'daycare_profile' => $nanny->daycare->images,
-            'daycare_location' => $nanny->daycare->location,
-            'daycare_latitude' => $nanny->daycare->latitude,
-            'daycare_longitude' => $nanny->daycare->longitude,
-            'daycare_bank' => $nanny->daycare->bank_account,
-            'daycare_bank_name' => $nanny->daycare->bank_account_name,
-            'daycare_bank_number' => $nanny->daycare->bank_account_number,
-            'created_at' => $nanny->created_at,
-            'updated_at' => $nanny->updated_at,
-            'reviews' => $reviews, 
-        ];
-
         return response()->json([
             'statusCode' => 200,
             'message' => 'Successfully retrieved nanny',
-            'data' => $nannyData,
+            'data' => $nanny,
         ]);
     }
 
