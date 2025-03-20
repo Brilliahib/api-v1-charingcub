@@ -11,18 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('nannies', function (Blueprint $table) {
+        Schema::create('talks', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
-            $table->uuid('daycare_id')->nullable();
-            $table->string('images');
-            $table->string('gender');
-            $table->integer('age');
-            $table->string('contact');
-            $table->text('experience_description');
+            $table->string('question_title');
+            $table->text('question_detail');
             $table->timestamps();
 
-            $table->foreign('daycare_id')->references('id')->on('daycares')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
@@ -32,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('nannies');
+        Schema::dropIfExists('talks');
     }
 };

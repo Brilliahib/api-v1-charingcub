@@ -64,11 +64,11 @@ class ArticleController extends Controller
                 'message' => 'Articles retrieved successfully',
                 'data' => $articles->items(),
                 'pagination' => [
-                'current_page' => $articles->currentPage(),
-                'per_page' => $articles->perPage(),
-                'total' => $articles->total(),
-                'last_page' => $articles->lastPage(),
-            ],
+                    'current_page' => $articles->currentPage(),
+                    'per_page' => $articles->perPage(),
+                    'total' => $articles->total(),
+                    'last_page' => $articles->lastPage(),
+                ],
             ],
             200,
         );
