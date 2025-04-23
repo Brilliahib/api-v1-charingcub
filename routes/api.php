@@ -143,6 +143,7 @@ Route::get('/daycares/disability', [DaycareController::class, 'getAllWithDisabil
 Route::get('/daycares/{id}', [DaycareController::class, 'show']); // Get a single daycare by ID
 
 Route::get('/nannies', [NannyController::class, 'index']); // Get all daycares
+Route::get('/nannies/daycare/{daycare_id}', [NannyController::class, 'getNanniesByDaycare']); // Get all nannies by daycare ID
 Route::get('/nannies/{id}', [NannyController::class, 'show']); // Get a single daycare by ID
 
 Route::get('/talk', [TalkController::class, 'index']);  // Get all talk

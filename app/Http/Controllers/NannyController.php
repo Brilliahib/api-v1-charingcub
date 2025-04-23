@@ -11,10 +11,30 @@ class NannyController extends Controller
     public function index()
     {
         $nannies = Nanny::with('user', 'daycare', 'priceLists')->get();
-    
+
         return response()->json([
             'statusCode' => 200,
             'message' => 'Successfully retrieved nannies',
+            'data' => $nannies,
+        ]);
+    }
+
+    public function getNanniesByDaycare($daycare_id)
+    {
+        $nannies = Nanny::with('user', 'daycare', 'priceLists')
+            ->where('daycare_id', $daycare_id)
+            ->get();
+
+        if ($nannies->isEmpty()) {
+            return response()->json([
+                'statusCode' => 404,
+                'message' => 'No nannies found for the given daycare.',
+            ]);
+        }
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Successfully retrieved nannies for the daycare',
             'data' => $nannies,
         ]);
     }
