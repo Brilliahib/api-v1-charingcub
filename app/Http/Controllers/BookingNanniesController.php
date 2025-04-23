@@ -13,11 +13,12 @@ class BookingNanniesController extends Controller
     {
         $request->validate([
             'nanny_id' => 'required|exists:nannies,id',
+            'price_id' => 'required|exists:nanny_price_lists,id',
             'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',
             'name_babies' => 'required|string',
-            'age_babies' => 'required',
-            'special_request' => 'required|nullable',
+            'age_babies' => 'required|integer',
+            'special_request' => 'nullable|string',
         ]);
 
         $userId = auth()->id();
@@ -25,6 +26,7 @@ class BookingNanniesController extends Controller
         $booking = BookingNannies::create([
             'user_id' => $userId,
             'nanny_id' => $request->nanny_id,
+            'price_id' => $request->price_id,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
             'name_babies' => $request->name_babies,

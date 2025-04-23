@@ -101,6 +101,9 @@ Route::middleware('auth:api')->group(function () {
             Route::post('/booking/{id}/paid', [BookingDaycareController::class, 'paidConfirmationBooking']);
             Route::get('/nannies/list', [DaycareController::class, 'getNanniesByDaycareId']);
             Route::get('/booking/list', [BookingDaycareController::class, 'listDaycareBookings']);
+            Route::get('/income-summary', [BookingDaycareController::class, 'getDaycareIncomeSummary']);
+            Route::get('/income-total', [BookingDaycareController::class, 'getDaycareIncomeTotal']);
+            Route::get('/income-today', [BookingDaycareController::class, 'getDaycareIncomeToday']);
         });
 
         Route::prefix('user')->group(function () {

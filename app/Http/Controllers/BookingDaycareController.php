@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\BookingDaycare;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Midtrans\Config;
 
@@ -62,6 +64,11 @@ class BookingDaycareController extends Controller
                     'quantity' => 1,
                     'name' => 'Daycare Booking: ' . $booking->id,
                 ],
+            ],
+            'callbacks' => [
+                'finish' => 'https://charingcub.com/dashboard/bookings/daycares',
+                'unfinish' => 'https://charingcub.com/dashboard/bookings/daycares',
+                'error' => 'https://charingcub.com/dashboard/bookings/daycares',
             ],
         ];
 
@@ -182,7 +189,7 @@ class BookingDaycareController extends Controller
     // Get booking details for a user
     public function getUserBookingDetail($id)
     {
-        $booking = BookingDaycare::with(['user', 'daycares'])->findOrFail($id);
+        $booking = BookingDaycare::with(['user', 'daycares', 'priceLists'])->findOrFail($id);
 
         return response()->json(
             [
@@ -194,7 +201,6 @@ class BookingDaycareController extends Controller
         );
     }
 
-    // List daycare bookings
     public function listDaycareBookings(Request $request)
     {
         $user = Auth::user();
@@ -215,11 +221,13 @@ class BookingDaycareController extends Controller
 
         $bookings = BookingDaycare::where('daycare_id', $daycareProfile->id)
             ->when($name, function ($query, $name) {
-                $query->where('name_babies', 'like', '%' . $name . '%')->orWhereHas('user', function ($query) use ($name) {
-                    $query->where('name', 'like', '%' . $name . '%');
-                });
+                $query->where('name_babies', 'like', '%' . $name . '%')
+                    ->orWhereHas('user', function ($query) use ($name) {
+                        $query->where('name', 'like', '%' . $name . '%');
+                    });
             })
             ->with('user')
+            ->orderBy('created_at', 'desc')
             ->paginate(10);
 
         return response()->json(
@@ -236,5 +244,135 @@ class BookingDaycareController extends Controller
             ],
             200,
         );
+    }
+
+    public function getDaycareIncomeSummary(Request $request)
+    {
+        $user = Auth::user();
+        $daycareProfile = $user->daycare;
+
+        if (!$daycareProfile) {
+            return response()->json([
+                'statusCode' => 404,
+                'message' => 'User does not have a daycare profile.',
+                'data' => [],
+            ], 404);
+        }
+
+        $range = $request->query('range', 'weekly'); // weekly | monthly | yearly
+        $endDate = Carbon::now();
+        $startDate = match ($range) {
+            'monthly' => $endDate->copy()->subMonth(),
+            'yearly' => $endDate->copy()->subYear(),
+            default => $endDate->copy()->subWeek(),
+        };
+
+        // Total income
+        $totalIncome = DB::table('booking_daycares')
+            ->where('daycare_id', $daycareProfile->id)
+            ->where('payment_status', 'paid')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->sum('total_payment');
+
+        // Daily income
+        $dailyIncome = DB::table('booking_daycares')
+            ->select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('SUM(total_payment) as total')
+            )
+            ->where('daycare_id', $daycareProfile->id)
+            ->where('payment_status', 'paid')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->orderBy('date', 'asc')
+            ->get();
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Income summary retrieved successfully.',
+            'data' => [
+                'total_income' => $totalIncome,
+                'daily_income' => $dailyIncome,
+                'range' => $range,
+                'start_date' => $startDate->toDateString(),
+                'end_date' => $endDate->toDateString(),
+            ],
+        ], 200);
+    }
+
+    public function getDaycareIncomeTotal()
+    {
+        $user = Auth::user();
+        $daycareProfile = $user->daycare;
+
+        if (!$daycareProfile) {
+            return response()->json([
+                'statusCode' => 404,
+                'message' => 'User does not have a daycare profile.',
+                'data' => [],
+            ], 404);
+        }
+
+        // Total income berdasarkan join ke tabel price list
+        $totalIncome = DB::table('booking_daycares')
+            ->join('daycare_price_lists', 'booking_daycares.price_id', '=', 'daycare_price_lists.id')
+            ->where('booking_daycares.daycare_id', $daycareProfile->id)
+            ->where('booking_daycares.payment_status', 'paid')
+            ->sum('daycare_price_lists.price');
+
+        // Daily income berdasarkan tanggal booking (created_at)
+        $dailyIncome = DB::table('booking_daycares')
+            ->join('daycare_price_lists', 'booking_daycares.price_id', '=', 'daycare_price_lists.id')
+            ->select(
+                DB::raw('DATE(booking_daycares.created_at) as date'),
+                DB::raw('SUM(daycare_price_lists.price) as total')
+            )
+            ->where('booking_daycares.daycare_id', $daycareProfile->id)
+            ->where('booking_daycares.payment_status', 'paid')
+            ->groupBy(DB::raw('DATE(booking_daycares.created_at)'))
+            ->orderBy('date', 'asc')
+            ->get();
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Total daycare income retrieved successfully.',
+            'data' => [
+                'total_income' => $totalIncome,
+                'daily_income' => $dailyIncome,
+            ],
+        ], 200);
+    }
+
+    public function getDaycareIncomeToday()
+    {
+        $user = Auth::user();
+        $daycareProfile = $user->daycare;
+
+        if (!$daycareProfile) {
+            return response()->json([
+                'statusCode' => 404,
+                'message' => 'User does not have a daycare profile.',
+                'data' => [],
+            ], 404);
+        }
+
+        $today = Carbon::today(); // ambil tanggal hari ini
+
+        // Hitung total income hari ini
+        $totalIncomeToday = DB::table('booking_daycares')
+            ->join('daycare_price_lists', 'booking_daycares.price_id', '=', 'daycare_price_lists.id')
+            ->where('booking_daycares.daycare_id', $daycareProfile->id)
+            ->where('booking_daycares.payment_status', 'paid')
+            ->whereDate('booking_daycares.created_at', $today)
+            ->sum('daycare_price_lists.price');
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Today\'s daycare income retrieved successfully.',
+            'data' => [
+                'total_income_today' => $totalIncomeToday,
+                'date' => $today->toDateString(),
+            ],
+        ], 200);
     }
 }
