@@ -101,6 +101,9 @@ Route::middleware('auth:api')->group(function () {
             Route::post('/booking/{id}/paid', [BookingDaycareController::class, 'paidConfirmationBooking']);
             Route::get('/nannies/list', [DaycareController::class, 'getNanniesByDaycareId']);
             Route::get('/booking/list', [BookingDaycareController::class, 'listDaycareBookings']);
+            Route::get('/income-summary', [BookingDaycareController::class, 'getDaycareIncomeSummary']);
+            Route::get('/income-total', [BookingDaycareController::class, 'getDaycareIncomeTotal']);
+            Route::get('/income-today', [BookingDaycareController::class, 'getDaycareIncomeToday']);
         });
 
         Route::prefix('user')->group(function () {
@@ -140,6 +143,7 @@ Route::get('/daycares/disability', [DaycareController::class, 'getAllWithDisabil
 Route::get('/daycares/{id}', [DaycareController::class, 'show']); // Get a single daycare by ID
 
 Route::get('/nannies', [NannyController::class, 'index']); // Get all daycares
+Route::get('/nannies/daycare/{daycare_id}', [NannyController::class, 'getNanniesByDaycare']); // Get all nannies by daycare ID
 Route::get('/nannies/{id}', [NannyController::class, 'show']); // Get a single daycare by ID
 
 Route::get('/talk', [TalkController::class, 'index']);  // Get all talk

@@ -360,7 +360,7 @@ class DaycareController extends Controller
             );
         }
 
-        $nannies = $daycare->nannies;
+        $nannies = $daycare->nannies()->with('user')->get();
 
         return response()->json([
             'statusCode' => 200,
