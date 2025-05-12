@@ -8,6 +8,7 @@ use App\Http\Controllers\BookingDaycareController;
 use App\Http\Controllers\BookingNanniesController;
 use App\Http\Controllers\ChatRoomController;
 use App\Http\Controllers\DaycareController;
+use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NannyController;
 use App\Http\Controllers\TalkController;
@@ -49,12 +50,19 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/users/daycares/booking/list', [BookingDaycareController::class, 'listUserBookings']);
     Route::get('/users/daycares/booking/{id}', [BookingDaycareController::class, 'getUserBookingDetail']);
 
+    Route::post('/feedback', [FeedbackController::class, 'store']);
+
     Route::middleware('role:admin')->group(function () {
         Route::prefix('user')->group(function () {
             Route::post('/', [AdminController::class, 'createUser']);
             Route::get('/', [AdminController::class, 'getAllUsers']);
             Route::get('/{id}', [AdminController::class, 'getUserDetail']);
         });
+
+        Route::get('/feedback', [FeedbackController::class, 'index']);
+        Route::get('/feedback/{id}', [FeedbackController::class, 'show']);
+        Route::put('/feedback/{id}', [FeedbackController::class, 'update']);
+        Route::delete('/feedback/{id}', [FeedbackController::class, 'destroy']);
 
         // Rute untuk Article
         Route::prefix('article')->group(function () {
