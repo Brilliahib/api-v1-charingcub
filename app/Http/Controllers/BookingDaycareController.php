@@ -375,4 +375,27 @@ class BookingDaycareController extends Controller
             ],
         ], 200);
     }
+
+    public function listUserPaidDaycares(Request $request)
+    {
+        $daycares = Auth::user()
+            ->bookingDaycares()
+            ->where('payment_status', 'paid')
+            ->with('daycares:id,name')
+            ->get()
+            ->map(fn($booking) => $booking->daycares)
+            ->filter() // remove null values
+            ->unique('id') // handle duplicates daycare
+            ->values()
+            ->map(fn($daycare) => [
+                'id' => $daycare->id,
+                'name' => $daycare->name,
+            ]);
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Paid daycare list retrieved successfully.',
+            'data' => $daycares,
+        ]);
+    }
 }
