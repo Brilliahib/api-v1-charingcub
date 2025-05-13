@@ -302,6 +302,49 @@ class BookingDaycareController extends Controller
         ], 200);
     }
 
+    public function getDaycareIncomeTotal()
+    {
+        $user = Auth::user();
+        $daycareProfile = $user->daycare;
+
+        if (!$daycareProfile) {
+            return response()->json([
+                'statusCode' => 404,
+                'message' => 'User does not have a daycare profile.',
+                'data' => [],
+            ], 404);
+        }
+
+        // Total income berdasarkan join ke tabel price list
+        $totalIncome = DB::table('booking_daycares')
+            ->join('daycare_price_lists', 'booking_daycares.price_id', '=', 'daycare_price_lists.id')
+            ->where('booking_daycares.daycare_id', $daycareProfile->id)
+            ->where('booking_daycares.payment_status', 'paid')
+            ->sum('daycare_price_lists.price');
+
+        // Daily income berdasarkan tanggal booking (created_at)
+        $dailyIncome = DB::table('booking_daycares')
+            ->join('daycare_price_lists', 'booking_daycares.price_id', '=', 'daycare_price_lists.id')
+            ->select(
+                DB::raw('DATE(booking_daycares.created_at) as date'),
+                DB::raw('SUM(daycare_price_lists.price) as total')
+            )
+            ->where('booking_daycares.daycare_id', $daycareProfile->id)
+            ->where('booking_daycares.payment_status', 'paid')
+            ->groupBy(DB::raw('DATE(booking_daycares.created_at)'))
+            ->orderBy('date', 'asc')
+            ->get();
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Total daycare income retrieved successfully.',
+            'data' => [
+                'total_income' => $totalIncome,
+                'daily_income' => $dailyIncome,
+            ],
+        ], 200);
+    }
+
     public function getDaycareIncomeToday()
     {
         $user = Auth::user();
