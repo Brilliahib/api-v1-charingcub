@@ -300,7 +300,7 @@ class BookingDaycareController extends Controller
         ], 200);
     }
 
-    public function getDaycareIncomeTotal()
+    public function getDaycareIncomeSummary(Request $request)
     {
         $user = Auth::user();
         $daycareProfile = $user->daycare;
@@ -313,14 +313,23 @@ class BookingDaycareController extends Controller
             ], 404);
         }
 
-        // Total income berdasarkan join ke tabel price list
+        $range = $request->query('range', 'weekly'); // weekly | monthly | yearly
+        $endDate = Carbon::now();
+        $startDate = match ($range) {
+            'monthly' => $endDate->copy()->subMonth(),
+            'yearly' => $endDate->copy()->subYear(),
+            default => $endDate->copy()->subWeek(),
+        };
+
+        // Total income dari price list
         $totalIncome = DB::table('booking_daycares')
             ->join('daycare_price_lists', 'booking_daycares.price_id', '=', 'daycare_price_lists.id')
             ->where('booking_daycares.daycare_id', $daycareProfile->id)
             ->where('booking_daycares.payment_status', 'paid')
+            ->whereBetween('booking_daycares.created_at', [$startDate, $endDate])
             ->sum('daycare_price_lists.price');
 
-        // Daily income berdasarkan tanggal booking (created_at)
+        // Daily income dari price list
         $dailyIncome = DB::table('booking_daycares')
             ->join('daycare_price_lists', 'booking_daycares.price_id', '=', 'daycare_price_lists.id')
             ->select(
@@ -329,16 +338,20 @@ class BookingDaycareController extends Controller
             )
             ->where('booking_daycares.daycare_id', $daycareProfile->id)
             ->where('booking_daycares.payment_status', 'paid')
+            ->whereBetween('booking_daycares.created_at', [$startDate, $endDate])
             ->groupBy(DB::raw('DATE(booking_daycares.created_at)'))
             ->orderBy('date', 'asc')
             ->get();
 
         return response()->json([
             'statusCode' => 200,
-            'message' => 'Total daycare income retrieved successfully.',
+            'message' => 'Income summary retrieved successfully.',
             'data' => [
                 'total_income' => $totalIncome,
                 'daily_income' => $dailyIncome,
+                'range' => $range,
+                'start_date' => $startDate->toDateString(),
+                'end_date' => $endDate->toDateString(),
             ],
         ], 200);
     }
