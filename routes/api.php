@@ -50,6 +50,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/users/daycares/booking/list', [BookingDaycareController::class, 'listUserBookings']);
     Route::get('/users/daycares/booking/{id}', [BookingDaycareController::class, 'getUserBookingDetail']);
 
+    Route::get('/monitoring/daycares', [DaycareController::class, 'listUserPaidDaycares']);
+
     Route::post('/feedback', [FeedbackController::class, 'store']);
 
     Route::middleware('role:admin')->group(function () {
