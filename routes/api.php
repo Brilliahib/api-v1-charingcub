@@ -141,7 +141,7 @@ Route::get('/article/{id}', [ArticleController::class, 'show']);
 Route::get('/article', [ArticleController::class, 'getAllArticle']);
 
 Route::get('/article-types', [ArticleTypeController::class, 'getAllArticleType']);
-Route::get('/article-types/{id}', [ArticleController::class, 'showArticleType']);
+Route::get('/article-types/{id}', [ArticleTypeController::class, 'showArticleType']);
 
 Route::get('/daycares', [DaycareController::class, 'index']);
 Route::get('/daycares/disability', [DaycareController::class, 'getAllWithDisability']);
