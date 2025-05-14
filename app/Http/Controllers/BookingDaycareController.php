@@ -267,23 +267,25 @@ class BookingDaycareController extends Controller
             default => $endDate->copy()->subWeek(),
         };
 
-        // Total income
+        // Total income dari price list
         $totalIncome = DB::table('booking_daycares')
-            ->where('daycare_id', $daycareProfile->id)
-            ->where('payment_status', 'paid')
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->sum('total_payment');
+            ->join('daycare_price_lists', 'booking_daycares.price_id', '=', 'daycare_price_lists.id')
+            ->where('booking_daycares.daycare_id', $daycareProfile->id)
+            ->where('booking_daycares.payment_status', 'paid')
+            ->whereBetween('booking_daycares.created_at', [$startDate, $endDate])
+            ->sum('daycare_price_lists.price');
 
-        // Daily income
+        // Daily income dari price list
         $dailyIncome = DB::table('booking_daycares')
+            ->join('daycare_price_lists', 'booking_daycares.price_id', '=', 'daycare_price_lists.id')
             ->select(
-                DB::raw('DATE(created_at) as date'),
-                DB::raw('SUM(total_payment) as total')
+                DB::raw('DATE(booking_daycares.created_at) as date'),
+                DB::raw('SUM(daycare_price_lists.price) as total')
             )
-            ->where('daycare_id', $daycareProfile->id)
-            ->where('payment_status', 'paid')
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->groupBy(DB::raw('DATE(created_at)'))
+            ->where('booking_daycares.daycare_id', $daycareProfile->id)
+            ->where('booking_daycares.payment_status', 'paid')
+            ->whereBetween('booking_daycares.created_at', [$startDate, $endDate])
+            ->groupBy(DB::raw('DATE(booking_daycares.created_at)'))
             ->orderBy('date', 'asc')
             ->get();
 
