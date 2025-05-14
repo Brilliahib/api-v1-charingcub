@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 
 class ArticleTypeController extends Controller
 {
-    // Create a new article type
     public function create(CreateArticleTypeRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -25,7 +24,6 @@ class ArticleTypeController extends Controller
         );
     }
 
-    // Get all article types
     public function getAllArticleType(Request $request): JsonResponse
     {
         $name = $request->query('name', '');
@@ -50,7 +48,6 @@ class ArticleTypeController extends Controller
         );
     }
 
-    // Get a single article type by ID
     public function showArticleType($id): JsonResponse
     {
         $articleType = ArticleType::find($id);
@@ -73,5 +70,48 @@ class ArticleTypeController extends Controller
             ],
             200,
         );
+    }
+
+    public function update(Request $request, $id): JsonResponse
+    {
+        $articleType = ArticleType::find($id);
+
+        if (!$articleType) {
+            return response()->json([
+                'statusCode' => 404,
+                'error' => 'Article Type not found',
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $articleType->update($validated);
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Article Type successfully updated',
+            'data' => $articleType,
+        ], 200);
+    }
+
+    public function destroy($id): JsonResponse
+    {
+        $articleType = ArticleType::find($id);
+
+        if (!$articleType) {
+            return response()->json([
+                'statusCode' => 404,
+                'error' => 'Article Type not found',
+            ], 404);
+        }
+
+        $articleType->delete();
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Article Type successfully deleted',
+        ], 200);
     }
 }
