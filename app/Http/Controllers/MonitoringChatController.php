@@ -41,6 +41,7 @@ class MonitoringChatController extends Controller
         $chats = MonitoringChat::select('id', 'message', 'image', 'created_at', 'updated_at', 'user_id')
             ->with('user:id,name,profile')
             ->where('monitoring_children_id', $monitoringChildrenId)
+            ->orderBy('created_at', 'asc')
             ->get()
             ->makeHidden(['user_id']);
 
