@@ -418,17 +418,31 @@ class BookingDaycareController extends Controller
             );
         }
 
+        $name = $request->query('name', '');
+
         $bookings = BookingDaycare::where('daycare_id', $daycareProfile->id)
             ->where('payment_status', 'paid')
+            ->when($name, function ($query, $name) {
+                $query->where('name_babies', 'like', '%' . $name . '%')
+                    ->orWhereHas('user', function ($query) use ($name) {
+                        $query->where('name', 'like', '%' . $name . '%');
+                    });
+            })
             ->with('user')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10);
 
         return response()->json(
             [
                 'statusCode' => 200,
                 'message' => 'Paid daycare bookings retrieved successfully.',
-                'data' => $bookings,
+                'data' => $bookings->items(),
+                'pagination' => [
+                    'current_page' => $bookings->currentPage(),
+                    'per_page' => $bookings->perPage(),
+                    'total' => $bookings->total(),
+                    'last_page' => $bookings->lastPage(),
+                ],
             ],
             200,
         );
