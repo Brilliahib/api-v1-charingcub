@@ -124,6 +124,7 @@ Route::middleware('auth:api')->group(function () {
     Route::middleware('role:daycare')->group(function () {
         Route::prefix('daycares')->group(function () {
             Route::get('/profile', [DaycareController::class, 'getUserDaycare']);
+            Route::get('/my', [DaycareController::class, 'getMyDaycare']);
             Route::post('/', [DaycareController::class, 'store']);
             Route::put('/{id}', [DaycareController::class, 'update']);
             Route::delete('/{id}', [DaycareController::class, 'destroy']);

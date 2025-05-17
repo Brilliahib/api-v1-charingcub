@@ -368,4 +368,25 @@ class DaycareController extends Controller
             'data' => $nannies,
         ]);
     }
+
+    // get my daycare
+    public function getMyDaycare(): JsonResponse
+    {
+        $userId = auth()->id();
+
+        $daycare = Daycare::where('user_id', $userId)->first();
+
+        if (!$daycare) {
+            return response()->json([
+                'statusCode' => 404,
+                'message' => 'Daycare tidak ditemukan untuk user ini',
+            ], 404);
+        }
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Berhasil mengambil data daycare',
+            'data' => $daycare,
+        ]);
+    }
 }
