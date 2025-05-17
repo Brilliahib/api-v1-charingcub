@@ -400,4 +400,72 @@ class BookingDaycareController extends Controller
             'data' => $daycares,
         ]);
     }
+
+    // get all bookings paid on pov daycare
+    public function listPaidDaycareBookings(Request $request)
+    {
+        $user = Auth::user();
+
+        $daycareProfile = $user->daycare;
+        if (!$daycareProfile) {
+            return response()->json(
+                [
+                    'statusCode' => 404,
+                    'message' => 'User does not have a daycare profile.',
+                    'data' => [],
+                ],
+                404,
+            );
+        }
+
+        $bookings = BookingDaycare::where('daycare_id', $daycareProfile->id)
+            ->where('payment_status', 'paid')
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json(
+            [
+                'statusCode' => 200,
+                'message' => 'Paid daycare bookings retrieved successfully.',
+                'data' => $bookings,
+            ],
+            200,
+        );
+    }
+
+    // get all user booking paid to create monitoring children
+    public function listUserPaidBookings(Request $request)
+    {
+        $user = Auth::user();
+
+        $daycareProfile = $user->daycare;
+        if (!$daycareProfile) {
+            return response()->json(
+                [
+                    'statusCode' => 404,
+                    'message' => 'User does not have a daycare profile.',
+                    'data' => [],
+                ],
+                404,
+            );
+        }
+
+        $bookings = BookingDaycare::where('daycare_id', $daycareProfile->id)
+            ->where('payment_status', 'paid')
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->unique('user_id')
+            ->values(); // reset key index
+
+        return response()->json(
+            [
+                'statusCode' => 200,
+                'message' => 'Unique paid daycare bookings retrieved successfully.',
+                'data' => $bookings,
+            ],
+            200,
+        );
+    }
 }
