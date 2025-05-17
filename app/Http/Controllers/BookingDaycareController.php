@@ -48,12 +48,10 @@ class BookingDaycareController extends Controller
 
         $orderId = 'booking-' . $booking->id;
 
-        $booking->load('priceList');
-
         $params = [
             'transaction_details' => [
                 'order_id' => $orderId,
-                'gross_amount' => $booking->priceList->price,
+                'gross_amount' => $booking->priceLists->price,
             ],
             'customer_details' => [
                 'first_name' => Auth::user()->name,
@@ -89,11 +87,7 @@ class BookingDaycareController extends Controller
                 201,
             );
         } catch (\Exception $e) {
-            Log::error('Booking Daycare Error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
+            Log::error('Booking Daycare Error: ' . $e->getMessage());
             return response()->json(
                 [
                     'statusCode' => 500,

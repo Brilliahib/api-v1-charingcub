@@ -18,7 +18,7 @@ class BookingDaycare extends BaseModel
         return $this->belongsTo(Daycare::class, 'daycare_id');
     }
 
-    public function priceList()
+    public function priceLists()
     {
         return $this->belongsTo(DaycarePriceList::class, 'price_id');
     }
