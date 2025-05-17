@@ -56,6 +56,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/feedback', [FeedbackController::class, 'store']);
 
     Route::prefix('monitoring-children')->group(function () {
+        Route::get('/me', [MonitoringChildrenController::class, 'showByCurrentUser']);
         Route::get('/{id}', [MonitoringChildrenController::class, 'show']);
         Route::get('/by-daycare/{daycare_id}', [MonitoringChildrenController::class, 'showByDaycareId']);
         Route::get('/by-user/{user_id}', [MonitoringChildrenController::class, 'showByUserId']);

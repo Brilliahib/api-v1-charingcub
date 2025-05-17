@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MonitoringChildren;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class MonitoringChildrenController extends Controller
@@ -136,6 +137,30 @@ class MonitoringChildrenController extends Controller
         return response()->json([
             'statusCode' => 200,
             'message' => 'Successfully retrieved monitoring data by user ID',
+            'data' => $data,
+        ]);
+    }
+
+    // show monitoring child current user
+    public function showByCurrentUser()
+    {
+        $userId = Auth::id();
+
+        if (!$userId) {
+            return response()->json([
+                'statusCode' => 401,
+                'message' => 'Unauthorized',
+                'data' => null,
+            ], 401);
+        }
+
+        $data = MonitoringChildren::with(['user:id,name', 'daycare:id,name'])
+            ->where('user_id', $userId)
+            ->get();
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Successfully retrieved monitoring data for current user',
             'data' => $data,
         ]);
     }
