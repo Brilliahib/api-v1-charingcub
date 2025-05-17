@@ -37,4 +37,9 @@ class Daycare extends BaseModel
     {
         return $this->hasMany(DaycarePriceList::class);
     }
+
+    public function monitoringChildren()
+    {
+        return $this->hasMany(MonitoringChildren::class);
+    }
 }

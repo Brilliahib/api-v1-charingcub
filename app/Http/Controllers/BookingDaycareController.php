@@ -400,4 +400,86 @@ class BookingDaycareController extends Controller
             'data' => $daycares,
         ]);
     }
+
+    // get all bookings paid on pov daycare
+    public function listPaidDaycareBookings(Request $request)
+    {
+        $user = Auth::user();
+
+        $daycareProfile = $user->daycare;
+        if (!$daycareProfile) {
+            return response()->json(
+                [
+                    'statusCode' => 404,
+                    'message' => 'User does not have a daycare profile.',
+                    'data' => [],
+                ],
+                404,
+            );
+        }
+
+        $name = $request->query('name', '');
+
+        $bookings = BookingDaycare::where('daycare_id', $daycareProfile->id)
+            ->where('payment_status', 'paid')
+            ->when($name, function ($query, $name) {
+                $query->where('name_babies', 'like', '%' . $name . '%')
+                    ->orWhereHas('user', function ($query) use ($name) {
+                        $query->where('name', 'like', '%' . $name . '%');
+                    });
+            })
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return response()->json(
+            [
+                'statusCode' => 200,
+                'message' => 'Paid daycare bookings retrieved successfully.',
+                'data' => $bookings->items(),
+                'pagination' => [
+                    'current_page' => $bookings->currentPage(),
+                    'per_page' => $bookings->perPage(),
+                    'total' => $bookings->total(),
+                    'last_page' => $bookings->lastPage(),
+                ],
+            ],
+            200,
+        );
+    }
+
+    // get all user booking paid to create monitoring children
+    public function listUserPaidBookings(Request $request)
+    {
+        $user = Auth::user();
+
+        $daycareProfile = $user->daycare;
+        if (!$daycareProfile) {
+            return response()->json(
+                [
+                    'statusCode' => 404,
+                    'message' => 'User does not have a daycare profile.',
+                    'data' => [],
+                ],
+                404,
+            );
+        }
+
+        $users = BookingDaycare::where('daycare_id', $daycareProfile->id)
+            ->where('payment_status', 'paid')
+            ->with('user')
+            ->get()
+            ->pluck('user')
+            ->unique('id')
+            ->values(); // reset key index
+
+        return response()->json(
+            [
+                'statusCode' => 200,
+                'message' => 'Unique users with paid bookings retrieved successfully.',
+                'data' => $users,
+            ],
+            200,
+        );
+    }
 }
