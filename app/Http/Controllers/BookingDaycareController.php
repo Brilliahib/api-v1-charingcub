@@ -451,19 +451,19 @@ class BookingDaycareController extends Controller
             );
         }
 
-        $bookings = BookingDaycare::where('daycare_id', $daycareProfile->id)
+        $users = BookingDaycare::where('daycare_id', $daycareProfile->id)
             ->where('payment_status', 'paid')
             ->with('user')
-            ->orderBy('created_at', 'desc')
             ->get()
-            ->unique('user_id')
+            ->pluck('user')
+            ->unique('id')
             ->values(); // reset key index
 
         return response()->json(
             [
                 'statusCode' => 200,
-                'message' => 'Unique paid daycare bookings retrieved successfully.',
-                'data' => $bookings,
+                'message' => 'Unique users with paid bookings retrieved successfully.',
+                'data' => $users,
             ],
             200,
         );
