@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Midtrans\Config;
 
 class BookingDaycareController extends Controller
@@ -86,16 +87,12 @@ class BookingDaycareController extends Controller
                 ],
                 201,
             );
-        } catch (\Exception $e) {
-            Log::error('Booking Daycare Error: ' . $e->getMessage());
-            return response()->json(
-                [
-                    'statusCode' => 500,
-                    'message' => 'Failed to create payment transaction.',
-                    'error' => $e->getMessage(),
-                ],
-                500,
-            );
+        } catch (ValidationException $e) {
+            return response()->json([
+                'statusCode' => 422,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
         }
     }
 
@@ -400,7 +397,6 @@ class BookingDaycareController extends Controller
             'data' => $daycares,
         ]);
     }
-
     // get all bookings paid on pov daycare
     public function listPaidDaycareBookings(Request $request)
     {
