@@ -97,6 +97,8 @@ Route::middleware('auth:api')->group(function () {
 
         Route::prefix('user')->group(function () {
             Route::post('/', [AdminController::class, 'createUser']);
+            Route::get('/reset-password/{id}', [AdminController::class, 'resetPasswordUser']);
+            Route::delete('/{id}', [AdminController::class, 'deleteUser']);
         });
 
         Route::prefix('article-types')->group(function () {
