@@ -184,7 +184,7 @@ class NannyController extends Controller
             );
         }
 
-        $nanny = Nanny::with('daycare')
+        $nanny = Nanny::with(['daycare', 'priceLists'])
             ->where('user_id', $user->id)
             ->first();
 
