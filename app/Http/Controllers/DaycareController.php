@@ -374,7 +374,7 @@ class DaycareController extends Controller
     {
         $userId = auth()->id();
 
-        $daycare = Daycare::where('user_id', $userId)->first();
+        $daycare = Daycare::with(['facilityImages', 'priceLists'])->where('user_id', $userId)->first();
 
         if (!$daycare) {
             return response()->json([
