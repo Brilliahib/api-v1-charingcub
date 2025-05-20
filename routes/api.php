@@ -129,7 +129,7 @@ Route::middleware('auth:api')->group(function () {
             Route::get('/profile', [DaycareController::class, 'getUserDaycare']);
             Route::get('/my', [DaycareController::class, 'getMyDaycare']);
             Route::post('/', [DaycareController::class, 'store']);
-            Route::put('/{id}', [DaycareController::class, 'update']);
+            Route::put('/', [DaycareController::class, 'update']);
             Route::delete('/{id}', [DaycareController::class, 'destroy']);
             Route::post('/booking/{id}/approve', [BookingDaycareController::class, 'approveBooking']);
             Route::post('/booking/{id}/paid', [BookingDaycareController::class, 'paidConfirmationBooking']);
@@ -158,7 +158,7 @@ Route::middleware('auth:api')->group(function () {
         Route::prefix('nannies')->group(function () {
             Route::get('/profile', [NannyController::class, 'getUserNanny']);
             Route::post('/', [NannyController::class, 'store']);
-            Route::put('/{id}', [NannyController::class, 'update']);
+            Route::put('/', [NannyController::class, 'update']);
             Route::delete('/{id}', [NannyController::class, 'destroy']);
             Route::post('/booking/{id}/approve', [BookingNanniesController::class, 'approveBooking']);
             Route::post('/booking/{id}/paid', [BookingNanniesController::class, 'paidConfirmationBooking']);
