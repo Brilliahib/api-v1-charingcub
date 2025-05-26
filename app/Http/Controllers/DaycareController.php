@@ -167,43 +167,122 @@ class DaycareController extends Controller
     }
 
     // Mengupdate daycare
-    public function update(Request $request, $id)
+    public function update(Request $request)
     {
-        $daycare = Daycare::findOrFail($id);
+        try {
+            $user = auth()->user();
+            $daycare = $user->daycare; // Pastikan relasi "daycare" sudah ada di model User
 
-        $this->authorize('update', $daycare);
+            if (!$daycare) {
+                return response()->json([
+                    'statusCode' => 404,
+                    'message' => 'Daycare not found',
+                ]);
+            }
 
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'images' => 'required|image',
-            'description' => 'nullable|string',
-            'opening_hours' => 'required|date_format:H:i',
-            'closing_hours' => 'required|date_format:H:i',
-            'opening_days' => 'required|string',
-            'phone_number' => 'nullable|string|max:20',
-            'facility_images' => 'required|array',
-            'facility_images.*' => 'image',
-            'location' => 'required|string',
-            'address' => 'required|string',
-            'longitude' => 'nullable|numeric',
-            'latitude' => 'nullable|numeric',
-            'location_tracking' => 'required|string',
-            'price_half' => 'required|integer',
-            'price_full' => 'required|integer',
-            'is_disability' => 'required|boolean',
-            'bank_account' => 'required|string',
-            'bank_account_number' => 'required|string',
-            'bank_account_name' => 'required|string',
-        ]);
+            $this->authorize('update', $daycare);
 
-        $daycare->update($request->all());
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'images' => 'nullable|image',
+                'description' => 'nullable|string',
+                'opening_hours' => 'required|date_format:H:i',
+                'closing_hours' => 'required|date_format:H:i',
+                'opening_days' => 'required|string',
+                'phone_number' => 'nullable|string|max:20',
+                'facility_images' => 'nullable|array',
+                'facility_images.*' => 'image',
+                'location' => 'required|string',
+                'address' => 'required|string',
+                'longitude' => 'nullable|numeric',
+                'latitude' => 'nullable|numeric',
+                'location_tracking' => 'required|string',
+                'price_half' => 'required|integer',
+                'price_full' => 'required|integer',
+                'is_disability' => 'required|boolean',
+                'bank_account' => 'required|string',
+                'bank_account_number' => 'required|string',
+                'bank_account_name' => 'required|string',
+                'price_lists' => 'nullable|array',
+                'price_lists.*.age_start' => 'required|string',
+                'price_lists.*.age_end' => 'required|string',
+                'price_lists.*.name' => 'required|string',
+                'price_lists.*.price' => 'required|integer',
+            ]);
 
-        return response()->json([
-            'statusCode' => 200,
-            'message' => 'Daycare successfully updated',
-            'data' => $daycare,
-        ]);
+            if ($request->hasFile('images')) {
+                $imageName = time() . '_' . $request->file('images')->getClientOriginalName();
+                $imagePath = $request->file('images')->storeAs('daycare', $imageName, 'public');
+                $daycare->images = 'public/' . $imagePath;
+            }
+
+            $daycare->update($request->only([
+                'name',
+                'description',
+                'opening_hours',
+                'closing_hours',
+                'opening_days',
+                'phone_number',
+                'location',
+                'longitude',
+                'latitude',
+                'location_tracking',
+                'price_half',
+                'price_full',
+                'is_disability',
+                'address',
+                'bank_account',
+                'bank_account_number',
+                'bank_account_name'
+            ]));
+
+            if ($request->hasFile('facility_images')) {
+                FacilityDaycareImage::where('daycare_id', $daycare->id)->delete();
+
+                foreach ($request->file('facility_images') as $facilityImage) {
+                    $facilityImageName = time() . '_' . $facilityImage->getClientOriginalName();
+                    $facilityImagePath = $facilityImage->storeAs('daycare/facility', $facilityImageName, 'public');
+
+                    FacilityDaycareImage::create([
+                        'daycare_id' => $daycare->id,
+                        'image_url' => 'public/' . $facilityImagePath,
+                    ]);
+                }
+            }
+
+            if ($request->filled('price_lists')) {
+                DaycarePriceList::where('daycare_id', $daycare->id)->delete();
+
+                foreach ($request->price_lists as $priceList) {
+                    DaycarePriceList::create([
+                        'daycare_id' => $daycare->id,
+                        'age_start' => $priceList['age_start'],
+                        'age_end' => $priceList['age_end'],
+                        'name' => $priceList['name'],
+                        'price' => $priceList['price'],
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'statusCode' => 200,
+                'message' => 'Daycare successfully updated',
+                'data' => $daycare,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error occurred during update:', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            return response()->json([
+                'statusCode' => 500,
+                'message' => 'An unexpected error occurred',
+            ], 500);
+        }
     }
+
 
     // Menghapus daycare
     public function destroy($id)
@@ -374,7 +453,7 @@ class DaycareController extends Controller
     {
         $userId = auth()->id();
 
-        $daycare = Daycare::where('user_id', $userId)->first();
+        $daycare = Daycare::with(['facilityImages', 'priceLists'])->where('user_id', $userId)->first();
 
         if (!$daycare) {
             return response()->json([

@@ -56,7 +56,9 @@ class ArticleController extends Controller
         $title = $request->query('title', '');
         $articles = Article::when($title, function ($query, $title) {
             $query->where('title', 'like', '%' . $title . '%');
-        })->paginate(10);
+        })
+            ->latest()
+            ->paginate(10);
 
         return response()->json(
             [
@@ -72,6 +74,18 @@ class ArticleController extends Controller
             ],
             200,
         );
+    }
+
+    // get last 4 articles
+    public function getLatestArticles(): JsonResponse
+    {
+        $latestArticles = Article::latest()->take(4)->get();
+
+        return response()->json([
+            'statusCode' => 200,
+            'message' => 'Latest 4 articles retrieved successfully',
+            'data' => $latestArticles,
+        ], 200);
     }
 
     // Get a single article by ID

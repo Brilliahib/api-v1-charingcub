@@ -97,6 +97,8 @@ Route::middleware('auth:api')->group(function () {
 
         Route::prefix('user')->group(function () {
             Route::post('/', [AdminController::class, 'createUser']);
+            Route::get('/reset-password/{id}', [AdminController::class, 'resetPasswordUser']);
+            Route::delete('/{id}', [AdminController::class, 'deleteUser']);
         });
 
         Route::prefix('article-types')->group(function () {
@@ -127,7 +129,7 @@ Route::middleware('auth:api')->group(function () {
             Route::get('/profile', [DaycareController::class, 'getUserDaycare']);
             Route::get('/my', [DaycareController::class, 'getMyDaycare']);
             Route::post('/', [DaycareController::class, 'store']);
-            Route::put('/{id}', [DaycareController::class, 'update']);
+            Route::put('/', [DaycareController::class, 'update']);
             Route::delete('/{id}', [DaycareController::class, 'destroy']);
             Route::post('/booking/{id}/approve', [BookingDaycareController::class, 'approveBooking']);
             Route::post('/booking/{id}/paid', [BookingDaycareController::class, 'paidConfirmationBooking']);
@@ -156,7 +158,7 @@ Route::middleware('auth:api')->group(function () {
         Route::prefix('nannies')->group(function () {
             Route::get('/profile', [NannyController::class, 'getUserNanny']);
             Route::post('/', [NannyController::class, 'store']);
-            Route::put('/{id}', [NannyController::class, 'update']);
+            Route::put('/', [NannyController::class, 'update']);
             Route::delete('/{id}', [NannyController::class, 'destroy']);
             Route::post('/booking/{id}/approve', [BookingNanniesController::class, 'approveBooking']);
             Route::post('/booking/{id}/paid', [BookingNanniesController::class, 'paidConfirmationBooking']);
@@ -173,6 +175,7 @@ Route::middleware('auth:api')->group(function () {
 
 Route::get('/article/{id}', [ArticleController::class, 'show']);
 Route::get('/article', [ArticleController::class, 'getAllArticle']);
+Route::get('/article/latest', [ArticleController::class, 'getLatestArticles']);
 
 Route::get('/article-types', [ArticleTypeController::class, 'getAllArticleType']);
 Route::get('/article-types/{id}', [ArticleTypeController::class, 'showArticleType']);

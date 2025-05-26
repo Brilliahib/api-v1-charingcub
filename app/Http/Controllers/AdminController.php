@@ -95,4 +95,59 @@ class AdminController extends Controller
             'data' => $user,
         ], 200);
     }
+
+    public function resetPasswordUser($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'meta' => [
+                    'status' => 'error',
+                    'message' => 'User tidak ditemukan',
+                    'statusCode' => 404
+                ],
+                'data' => null
+            ], 404);
+        }
+
+        $user->password = Hash::make('password');
+        $user->save();
+
+        return response()->json([
+            'meta' => [
+                'status' => 'success',
+                'message' => 'Password berhasil direset menjadi password',
+                'statusCode' => 200
+            ],
+            'data' => $user
+        ]);
+    }
+
+    public function deleteUser($id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'meta' => [
+                    'status' => 'error',
+                    'message' => 'User tidak ditemukan',
+                    'statusCode' => 404
+                ],
+                'data' => null
+            ], 404);
+        }
+
+        $user->delete();
+
+        return response()->json([
+            'meta' => [
+                'status' => 'success',
+                'message' => 'User berhasil dihapus',
+                'statusCode' => 200
+            ],
+            'data' => null
+        ]);
+    }
 }

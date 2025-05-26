@@ -113,31 +113,57 @@ class NannyController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request)
     {
-        $nanny = Nanny::find($id);
-
-        $this->authorize('update', $nanny);
+        $user = auth()->user();
+        $nanny = $user->nannies;
 
         if (!$nanny) {
             return response()->json([
                 'statusCode' => 404,
-                'message' => 'Nanny not found',
+                'message' => 'Nanny not found for this user',
             ]);
         }
 
+        $this->authorize('update', $nanny);
+
         $request->validate([
-            'name' => 'string|max:255',
-            'images' => 'string',
-            'gender' => 'string|max:10',
-            'age' => 'integer|min:18',
-            'contact' => 'string|max:20',
-            'price_half' => 'integer',
-            'price_full' => 'integer',
-            'experience_description' => 'string',
+            'daycare_id' => 'nullable|string',
+            'images' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'gender' => 'nullable|string|max:10',
+            'age' => 'nullable|integer|min:18',
+            'contact' => 'nullable|string|max:20',
+            'experience_description' => 'nullable|string',
+            'price_lists' => 'nullable|array',
+            'price_lists.*.age_start' => 'nullable|string',
+            'price_lists.*.age_end' => 'nullable|string',
+            'price_lists.*.name' => 'nullable|string',
+            'price_lists.*.price' => 'nullable|integer',
         ]);
 
-        $nanny->update($request->all());
+        if ($request->hasFile('images')) {
+            $imageName = time() . '_' . $request->file('images')->getClientOriginalName();
+            $imagePath = $request->file('images')->storeAs('nannies', $imageName, 'public');
+            $imageUrl = 'public/' . $imagePath;
+            $nanny->images = $imageUrl;
+        }
+
+        $nanny->fill($request->except(['images', 'price_lists']));
+        $nanny->save();
+
+        if (!empty($request->price_lists) && is_array($request->price_lists)) {
+            NannyPriceList::where('nanny_id', $nanny->id)->delete();
+
+            foreach ($request->price_lists as $priceList) {
+                NannyPriceList::create([
+                    'nanny_id' => $nanny->id,
+                    'age_start' => $priceList['age_start'] ?? null,
+                    'age_end' => $priceList['age_end'] ?? null,
+                    'name' => $priceList['name'] ?? null,
+                    'price' => $priceList['price'] ?? null,
+                ]);
+            }
+        }
 
         return response()->json([
             'statusCode' => 200,
@@ -184,7 +210,7 @@ class NannyController extends Controller
             );
         }
 
-        $nanny = Nanny::with('daycare')
+        $nanny = Nanny::with(['daycare', 'priceLists'])
             ->where('user_id', $user->id)
             ->first();
 
