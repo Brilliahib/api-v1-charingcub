@@ -173,7 +173,7 @@ Route::middleware('auth:api')->group(function () {
     });
 });
 
-Route::get('/article/latest', [ArticleController::class, 'getLatestArticles']);
+Route::get('/article/lastest', [ArticleController::class, 'getLatestArticles']);
 Route::get('/article/{id}', [ArticleController::class, 'show']);
 Route::get('/article', [ArticleController::class, 'getAllArticle']);
 
