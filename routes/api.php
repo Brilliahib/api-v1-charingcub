@@ -175,6 +175,7 @@ Route::middleware('auth:api')->group(function () {
 
 Route::get('/article/{id}', [ArticleController::class, 'show']);
 Route::get('/article', [ArticleController::class, 'getAllArticle']);
+Route::get('/article/latest', [ArticleController::class, 'getLatestArticles']);
 
 Route::get('/article-types', [ArticleTypeController::class, 'getAllArticleType']);
 Route::get('/article-types/{id}', [ArticleTypeController::class, 'showArticleType']);
